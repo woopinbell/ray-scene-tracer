@@ -130,4 +130,13 @@ Color clampColor(const Color& value, double min_value, double max_value) {
                  clamp(value.z, min_value, max_value));
 }
 
+Ray::Ray() : origin(), direction(0.0, 0.0, 1.0) {}
+
+Ray::Ray(const Vec3& origin_value, const Vec3& direction_value)
+    : origin(origin_value), direction(direction_value) {}
+
+Vec3 Ray::at(double t) const {
+    return origin + direction * t;
+}
+
 }  // namespace ray
