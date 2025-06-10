@@ -117,6 +117,64 @@ Cylinder::Cylinder(const Vec3& center_value,
       radius(radius_value),
       height(height_value) {}
 
+namespace {
+
+bool update_hit_if_closer(const Ray& ray,
+                          const Material& material,
+                          const Shape* shape,
+                          double t,
+                          const Vec3& outward_normal,
+                          double t_min,
+                          double& closest,
+                          HitRecord& hit) {
+    if (t < t_min || t > closest) {
+        return false;
+    }
+    hit.t = t;
+    hit.point = ray.at(t);
+    hit.material = material;
+    hit.shape = shape;
+    hit.setFaceNormal(ray, outward_normal);
+    closest = t;
+    return true;
+}
+
+bool test_cylinder_cap(const Ray& ray,
+                       const Vec3& cap_center,
+                       const Vec3& outward_normal,
+                       double radius,
+                       const Material& material,
+                       const Shape* shape,
+                       double t_min,
+                       double& closest,
+                       HitRecord& hit) {
+    const double denominator = dot(outward_normal, ray.direction);
+    if (std::fabs(denominator) <= kEpsilon) {
+        return false;
+    }
+
+    const double t = dot(cap_center - ray.origin, outward_normal) / denominator;
+    if (t < t_min || t > closest) {
+        return false;
+    }
+
+    const Vec3 point = ray.at(t);
+    if ((point - cap_center).lengthSquared() > radius * radius + kEpsilon) {
+        return false;
+    }
+
+    return update_hit_if_closer(ray,
+                                material,
+                                shape,
+                                t,
+                                outward_normal,
+                                t_min,
+                                closest,
+                                hit);
+}
+
+}  // namespace
+
 bool Cylinder::intersect(const Ray& ray,
                          double t_min,
                          double t_max,
@@ -161,16 +219,39 @@ bool Cylinder::intersect(const Ray& ray,
                 if (outward_normal.isNearZero()) {
                     continue;
                 }
-                hit.t = root;
-                hit.point = point;
-                hit.material = material_;
-                hit.shape = this;
-                hit.setFaceNormal(ray, outward_normal);
-                closest = root;
-                found = true;
+                found = update_hit_if_closer(ray,
+                                             material_,
+                                             this,
+                                             root,
+                                             outward_normal,
+                                             t_min,
+                                             closest,
+                                             hit) || found;
             }
         }
     }
+
+    const Vec3 top_center = center + axis * half_height;
+    const Vec3 bottom_center = center - axis * half_height;
+    found = test_cylinder_cap(ray,
+                              top_center,
+                              axis,
+                              radius,
+                              material_,
+                              this,
+                              t_min,
+                              closest,
+                              hit) || found;
+    found = test_cylinder_cap(ray,
+                              bottom_center,
+                              -axis,
+                              radius,
+                              material_,
+                              this,
+                              t_min,
+                              closest,
+                              hit) || found;
+
     return found;
 }
 
