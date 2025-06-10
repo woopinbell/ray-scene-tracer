@@ -71,4 +71,39 @@ std::string Sphere::typeName() const {
     return "sphere";
 }
 
+Plane::Plane(const Vec3& point_value,
+             const Vec3& normal_value,
+             const Material& material_value)
+    : Shape(material_value), point(point_value), normal(normalize(normal_value)) {}
+
+bool Plane::intersect(const Ray& ray,
+                      double t_min,
+                      double t_max,
+                      HitRecord& hit) const {
+    if (normal.isNearZero()) {
+        return false;
+    }
+
+    const double denominator = dot(normal, ray.direction);
+    if (std::fabs(denominator) <= kEpsilon) {
+        return false;
+    }
+
+    const double t = dot(point - ray.origin, normal) / denominator;
+    if (t < t_min || t > t_max) {
+        return false;
+    }
+
+    hit.t = t;
+    hit.point = ray.at(t);
+    hit.material = material_;
+    hit.shape = this;
+    hit.setFaceNormal(ray, normal);
+    return true;
+}
+
+std::string Plane::typeName() const {
+    return "plane";
+}
+
 }  // namespace ray
