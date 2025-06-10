@@ -106,4 +106,76 @@ std::string Plane::typeName() const {
     return "plane";
 }
 
+Cylinder::Cylinder(const Vec3& center_value,
+                   const Vec3& axis_value,
+                   double radius_value,
+                   double height_value,
+                   const Material& material_value)
+    : Shape(material_value),
+      center(center_value),
+      axis(normalize(axis_value)),
+      radius(radius_value),
+      height(height_value) {}
+
+bool Cylinder::intersect(const Ray& ray,
+                         double t_min,
+                         double t_max,
+                         HitRecord& hit) const {
+    if (axis.isNearZero() || radius <= kEpsilon || height <= kEpsilon) {
+        return false;
+    }
+
+    bool found = false;
+    double closest = t_max;
+    const double half_height = height * 0.5;
+    const Vec3 oc = ray.origin - center;
+    const double direction_axis = dot(ray.direction, axis);
+    const double origin_axis = dot(oc, axis);
+    const Vec3 direction_perp = ray.direction - axis * direction_axis;
+    const Vec3 origin_perp = oc - axis * origin_axis;
+    const double a = dot(direction_perp, direction_perp);
+
+    if (a > kEpsilon) {
+        const double half_b = dot(direction_perp, origin_perp);
+        const double c = dot(origin_perp, origin_perp) - radius * radius;
+        const double discriminant = half_b * half_b - a * c;
+        if (discriminant >= 0.0) {
+            const double sqrt_discriminant = std::sqrt(discriminant);
+            const double roots[2] = {
+                (-half_b - sqrt_discriminant) / a,
+                (-half_b + sqrt_discriminant) / a
+            };
+
+            for (double root : roots) {
+                if (root < t_min || root > closest) {
+                    continue;
+                }
+                const Vec3 point = ray.at(root);
+                const double axial_distance = dot(point - center, axis);
+                if (axial_distance < -half_height - kEpsilon ||
+                    axial_distance > half_height + kEpsilon) {
+                    continue;
+                }
+                const Vec3 outward_normal =
+                    normalize((point - center) - axis * axial_distance);
+                if (outward_normal.isNearZero()) {
+                    continue;
+                }
+                hit.t = root;
+                hit.point = point;
+                hit.material = material_;
+                hit.shape = this;
+                hit.setFaceNormal(ray, outward_normal);
+                closest = root;
+                found = true;
+            }
+        }
+    }
+    return found;
+}
+
+std::string Cylinder::typeName() const {
+    return "cylinder";
+}
+
 }  // namespace ray
