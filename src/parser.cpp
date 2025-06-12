@@ -142,7 +142,7 @@ double parseRatio(const std::string& token,
     return value;
 }
 
-[[maybe_unused]] Vec3 parseVec3(const std::string& token,
+Vec3 parseVec3(const std::string& token,
                const std::string& source_name,
                std::size_t line_number,
                const std::string& field_name) {
@@ -218,7 +218,7 @@ void rejectDuplicate(bool already_seen,
     }
 }
 
-[[maybe_unused]] void requireNonzeroVector(const Vec3& value,
+void requireNonzeroVector(const Vec3& value,
                           const std::string& source_name,
                           std::size_t line_number,
                           const std::string& field_name) {
@@ -310,6 +310,65 @@ Scene parseScene(std::istream& input, const std::string& source_name) {
                            line_number,
                            "ambient color");
             scene.hasAmbient = true;
+        } else if (id == "C") {
+            expectCount(tokens,
+                        4,
+                        source_name,
+                        line_number,
+                        "C pos dir fov");
+            rejectDuplicate(scene.hasCamera,
+                            source_name,
+                            line_number,
+                            "C");
+            const Vec3 position =
+                parseVec3(tokens[1],
+                          source_name,
+                          line_number,
+                          "camera position");
+            const Vec3 direction =
+                parseVec3(tokens[2],
+                          source_name,
+                          line_number,
+                          "camera direction");
+            requireNonzeroVector(direction,
+                                 source_name,
+                                 line_number,
+                                 "camera direction");
+            const double fov =
+                parseDoubleToken(tokens[3],
+                                 source_name,
+                                 line_number,
+                                 "camera fov");
+            if (fov <= 0.0 || fov >= 180.0) {
+                throw ParseError(
+                    source_name,
+                    line_number,
+                    "camera fov must be greater than 0 and less than 180");
+            }
+            scene.camera = Camera(position, normalize(direction), fov);
+            scene.hasCamera = true;
+        } else if (id == "L") {
+            expectCount(tokens,
+                        4,
+                        source_name,
+                        line_number,
+                        "L pos brightness r,g,b");
+            const Vec3 position =
+                parseVec3(tokens[1],
+                          source_name,
+                          line_number,
+                          "light position");
+            const double brightness =
+                parseRatio(tokens[2],
+                           source_name,
+                           line_number,
+                           "light brightness");
+            const Color color =
+                parseColor(tokens[3],
+                           source_name,
+                           line_number,
+                           "light color");
+            scene.addLight(Light(position, brightness, color));
         } else {
             throw ParseError(source_name,
                              line_number,
