@@ -26,6 +26,11 @@ private:
 namespace parser {
 Scene parseScene(std::istream& input,
                  const std::string& source_name = "<stream>");
+Scene parseSceneText(const std::string& text,
+                     const std::string& source_name = "<text>");
+Scene parseSceneFile(const std::string& path);
 }  // namespace parser
+
+Scene loadScene(const std::string& path);
 
 }  // namespace ray

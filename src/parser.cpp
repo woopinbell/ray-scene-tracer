@@ -2,6 +2,7 @@
 
 #include <cctype>
 #include <cmath>
+#include <fstream>
 #include <limits>
 #include <memory>
 #include <sstream>
@@ -470,9 +471,39 @@ Scene parseScene(std::istream& input, const std::string& source_name) {
         }
     }
 
+    if (!scene.hasResolution) {
+        throw ParseError(
+            source_name, 0, "missing R width height directive");
+    }
+    if (!scene.hasAmbient) {
+        throw ParseError(
+            source_name, 0, "missing A ratio r,g,b directive");
+    }
+    if (!scene.hasCamera) {
+        throw ParseError(
+            source_name, 0, "missing C pos dir fov directive");
+    }
     return scene;
 }
 
+Scene parseSceneText(const std::string& text,
+                     const std::string& source_name) {
+    std::istringstream input(text);
+    return parseScene(input, source_name);
+}
+
+Scene parseSceneFile(const std::string& path) {
+    std::ifstream input(path);
+    if (!input) {
+        throw ParseError(path, 0, "unable to open scene file");
+    }
+    return parseScene(input, path);
+}
+
 }  // namespace parser
+
+Scene loadScene(const std::string& path) {
+    return parser::parseSceneFile(path);
+}
 
 }  // namespace ray

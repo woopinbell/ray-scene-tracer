@@ -1,0 +1,5 @@
+# Invalid on purpose: ambient ratio must be in the inclusive range [0.0, 1.0].
+R 320 200
+A 1.50 255,255,255
+C 0,0,0 0,0,1 60
+sp 0,0,5 2 255,0,0
