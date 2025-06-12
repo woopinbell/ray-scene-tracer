@@ -63,7 +63,7 @@ std::vector<std::string> splitCommas(const std::string& token) {
     return parts;
 }
 
-[[maybe_unused]] void expectCount(const std::vector<std::string>& tokens,
+void expectCount(const std::vector<std::string>& tokens,
                  std::size_t expected,
                  const std::string& source_name,
                  std::size_t line_number,
@@ -94,7 +94,7 @@ double parseDoubleToken(const std::string& token,
     }
 }
 
-[[maybe_unused]] int parseIntToken(const std::string& token,
+int parseIntToken(const std::string& token,
                   const std::string& source_name,
                   std::size_t line_number,
                   const std::string& field_name) {
@@ -114,7 +114,7 @@ double parseDoubleToken(const std::string& token,
     }
 }
 
-[[maybe_unused]] double parseRatio(const std::string& token,
+double parseRatio(const std::string& token,
                   const std::string& source_name,
                   std::size_t line_number,
                   const std::string& field_name) {
@@ -170,7 +170,7 @@ double parseDoubleToken(const std::string& token,
                          field_name + ".z"));
 }
 
-[[maybe_unused]] Color parseColor(const std::string& token,
+Color parseColor(const std::string& token,
                  const std::string& source_name,
                  std::size_t line_number,
                  const std::string& field_name) {
@@ -207,7 +207,7 @@ double parseDoubleToken(const std::string& token,
                  static_cast<double>(channels[2]) / 255.0);
 }
 
-[[maybe_unused]] void rejectDuplicate(bool already_seen,
+void rejectDuplicate(bool already_seen,
                      const std::string& source_name,
                      std::size_t line_number,
                      const std::string& directive) {
@@ -268,9 +268,53 @@ Scene parseScene(std::istream& input, const std::string& source_name) {
         const std::vector<std::string> tokens = splitTokens(line);
         const std::string& id = tokens[0];
 
+        if (id == "R") {
+            expectCount(tokens,
+                        3,
+                        source_name,
+                        line_number,
+                        "R width height");
+            rejectDuplicate(scene.hasResolution,
+                            source_name,
+                            line_number,
+                            "R");
+            scene.width =
+                parseIntToken(tokens[1],
+                              source_name,
+                              line_number,
+                              "width");
+            scene.height =
+                parseIntToken(tokens[2],
+                              source_name,
+                              line_number,
+                              "height");
+            scene.hasResolution = true;
+        } else if (id == "A") {
+            expectCount(tokens,
+                        3,
+                        source_name,
+                        line_number,
+                        "A ratio r,g,b");
+            rejectDuplicate(scene.hasAmbient,
+                            source_name,
+                            line_number,
+                            "A");
+            scene.ambientRatio =
+                parseRatio(tokens[1],
+                           source_name,
+                           line_number,
+                           "ambient ratio");
+            scene.ambientColor =
+                parseColor(tokens[2],
+                           source_name,
+                           line_number,
+                           "ambient color");
+            scene.hasAmbient = true;
+        } else {
             throw ParseError(source_name,
                              line_number,
                              "unknown directive '" + id + "'");
+        }
     }
 
     return scene;
