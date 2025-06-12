@@ -422,6 +422,47 @@ Scene parseScene(std::istream& input, const std::string& source_name) {
                            "plane color"));
             scene.addShape(
                 std::make_shared<Plane>(point, normal, material));
+        } else if (id == "cy") {
+            expectCount(tokens,
+                        6,
+                        source_name,
+                        line_number,
+                        "cy center axis diameter height r,g,b");
+            const Vec3 center =
+                parseVec3(tokens[1],
+                          source_name,
+                          line_number,
+                          "cylinder center");
+            const Vec3 axis =
+                parseVec3(tokens[2],
+                          source_name,
+                          line_number,
+                          "cylinder axis");
+            requireNonzeroVector(axis,
+                                 source_name,
+                                 line_number,
+                                 "cylinder axis");
+            const double diameter =
+                parsePositiveDouble(tokens[3],
+                                    source_name,
+                                    line_number,
+                                    "cylinder diameter");
+            const double height =
+                parsePositiveDouble(tokens[4],
+                                    source_name,
+                                    line_number,
+                                    "cylinder height");
+            const Material material(
+                parseColor(tokens[5],
+                           source_name,
+                           line_number,
+                           "cylinder color"));
+            scene.addShape(std::make_shared<Cylinder>(
+                center,
+                axis,
+                diameter * 0.5,
+                height,
+                material));
         } else {
             throw ParseError(source_name,
                              line_number,
