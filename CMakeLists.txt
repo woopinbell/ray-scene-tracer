@@ -29,6 +29,14 @@ target_link_libraries(ray-scene-tracer PRIVATE raycore)
 
 include(CTest)
 if(BUILD_TESTING)
+    add_executable(ray-core-tests tests/core_tests.cpp)
+    target_link_libraries(ray-core-tests PRIVATE raycore)
+    target_compile_definitions(
+        ray-core-tests
+        PRIVATE RAY_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+    )
+
+    add_test(NAME core_regression COMMAND ray-core-tests)
     add_test(
         NAME render_smoke
         COMMAND bash
