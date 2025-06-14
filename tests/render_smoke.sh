@@ -2,11 +2,13 @@
 set -euo pipefail
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
-BIN="$ROOT/ray-scene-tracer"
+BIN=${1:-"$ROOT/ray-scene-tracer"}
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 
-make -C "$ROOT" >/dev/null
+if [[ $# -eq 0 ]]; then
+    make -C "$ROOT" >/dev/null
+fi
 
 BAD_SCENE="$TMP/bad.rt"
 BAD_OUT="$TMP/bad.ppm"
