@@ -13,7 +13,7 @@ $(TARGET): $(SRC)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $(SRC)
 
 test: $(TARGET)
-	./$(TARGET) --help >/dev/null
+	./$(TARGET) scenes/basic.rt /tmp/ray-scene-tracer-check.ppm --checksum >/dev/null
 
 clean:
 	rm -f $(TARGET)
