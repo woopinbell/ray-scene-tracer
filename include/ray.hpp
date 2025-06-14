@@ -5,4 +5,5 @@
 #include "ray/material.hpp"
 #include "ray/math.hpp"
 #include "ray/parser.hpp"
+#include "ray/renderer.hpp"
 #include "ray/scene.hpp"
