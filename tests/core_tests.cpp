@@ -79,6 +79,36 @@ void testInvalidFixture() {
     require(rejected, "invalid scene fixture");
 }
 
+void testNearZeroDirections() {
+    const std::string prefix =
+        "R 8 8\n"
+        "A 0.1 255,255,255\n";
+    bool camera_rejected = false;
+    try {
+        (void)ray::parser::parseSceneText(
+            prefix +
+                "C 0,0,0 0.000001,0,0 60\n",
+            "small-camera-direction.rt");
+    } catch (const ray::ParseError&) {
+        camera_rejected = true;
+    }
+    require(camera_rejected,
+            "near-zero camera direction rejection");
+
+    bool cylinder_rejected = false;
+    try {
+        (void)ray::parser::parseSceneText(
+            prefix +
+                "C 0,0,0 0,0,1 60\n"
+                "cy 0,0,5 0.000001,0,0 1 2 255,0,0\n",
+            "small-cylinder-axis.rt");
+    } catch (const ray::ParseError&) {
+        cylinder_rejected = true;
+    }
+    require(cylinder_rejected,
+            "near-zero cylinder axis rejection");
+}
+
 void testOutput() {
     ray::Image image(2, 1);
     image.pixels = {255, 0, 16, 0, 127, 255};
@@ -105,6 +135,7 @@ int main() {
         testMath();
         testGeometry();
         testInvalidFixture();
+        testNearZeroDirections();
         testOutput();
         testRenderGolden();
     } catch (const std::exception& error) {
