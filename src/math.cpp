@@ -16,7 +16,7 @@ double Vec3::lengthSquared() const {
 }
 
 double Vec3::length() const {
-    return std::sqrt(lengthSquared());
+    return std::hypot(x, y, z);
 }
 
 Vec3 Vec3::normalized() const {
