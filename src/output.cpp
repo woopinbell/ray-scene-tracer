@@ -17,7 +17,10 @@ void writePpm(const Image& image, const std::string& path) {
     for (int y = 0; y < image.height; ++y) {
         for (int x = 0; x < image.width; ++x) {
             const std::size_t base =
-                static_cast<std::size_t>((y * image.width + x) * 3);
+                (static_cast<std::size_t>(y) *
+                     static_cast<std::size_t>(image.width) +
+                 static_cast<std::size_t>(x)) *
+                3;
             output << static_cast<int>(image.pixels[base]) << ' '
                    << static_cast<int>(image.pixels[base + 1]) << ' '
                    << static_cast<int>(image.pixels[base + 2]) << '\n';
