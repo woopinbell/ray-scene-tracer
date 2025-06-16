@@ -27,6 +27,9 @@ endif()
 add_executable(ray-scene-tracer src/main.cpp)
 target_link_libraries(ray-scene-tracer PRIVATE raycore)
 
+add_executable(ray-benchmark benchmarks/render_benchmark.cpp)
+target_link_libraries(ray-benchmark PRIVATE raycore)
+
 include(CTest)
 if(BUILD_TESTING)
     add_executable(ray-core-tests tests/core_tests.cpp)
