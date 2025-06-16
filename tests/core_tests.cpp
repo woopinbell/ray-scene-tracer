@@ -38,6 +38,9 @@ void testMath() {
             "cross product");
     require(nearlyEqual(ray::normalize(ray::Vec3(0.0, 3.0, 4.0)).length(), 1.0),
             "normalization");
+    require(ray::normalize(ray::Vec3(1.0e308, 0.0, 0.0)) ==
+                ray::Vec3(1.0, 0.0, 0.0),
+            "large finite vector normalization");
 }
 
 void testGeometry() {
