@@ -9,23 +9,27 @@ bool findNearestHit(const Scene& scene,
                     const Ray& ray,
                     HitRecord& hit,
                     double t_min,
-                    double t_max) {
-    return scene.intersect(ray, t_min, t_max, hit);
+                    double t_max,
+                    RenderStats* stats) {
+    return scene.intersect(ray, t_min, t_max, hit, stats);
 }
 
 bool isOccluded(const Scene& scene,
                 const Ray& shadow_ray,
-                double max_distance) {
+                double max_distance,
+                RenderStats* stats) {
     HitRecord ignored;
     return scene.intersect(shadow_ray,
                            kRayTMin,
                            std::max(kRayTMin, max_distance - kRayTMin),
-                           ignored);
+                           ignored,
+                           stats);
 }
 
 Color shadeHit(const Scene& scene,
                const HitRecord& hit,
-               const Ray& view_ray) {
+               const Ray& view_ray,
+               RenderStats* stats) {
     (void)view_ray;
 
     Color result =
@@ -46,9 +50,13 @@ Color shadeHit(const Scene& scene,
             continue;
         }
 
+        if (stats) {
+            ++stats->shadowRays;
+        }
         if (isOccluded(scene,
                        Ray(shadow_origin, light_direction),
-                       distance_to_light)) {
+                       distance_to_light,
+                       stats)) {
             continue;
         }
 
@@ -59,17 +67,21 @@ Color shadeHit(const Scene& scene,
     return clampColor(result);
 }
 
-Color traceRay(const Scene& scene, const Ray& ray, int max_depth) {
+Color traceRay(const Scene& scene,
+               const Ray& ray,
+               int max_depth,
+               RenderStats* stats) {
     (void)max_depth;
 
     HitRecord hit;
     if (!scene.intersect(ray,
                          kRayTMin,
                          std::numeric_limits<double>::infinity(),
-                         hit)) {
+                         hit,
+                         stats)) {
         return scene.background;
     }
-    return shadeHit(scene, hit, ray);
+    return shadeHit(scene, hit, ray, stats);
 }
 
 }  // namespace ray

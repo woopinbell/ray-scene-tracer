@@ -1,5 +1,6 @@
 #include "ray/renderer.hpp"
 
+#include <chrono>
 #include <cmath>
 
 namespace ray {
@@ -17,7 +18,10 @@ Image::Image(int width_value, int height_value)
       height(height_value),
       pixels(static_cast<std::size_t>(width_value * height_value * 3), 0) {}
 
-Image renderScene(const Scene& scene, const RenderSettings& settings) {
+Image renderScene(const Scene& scene,
+                  const RenderSettings& settings,
+                  RenderStats* stats) {
+    const auto started = std::chrono::steady_clock::now();
     Image image(scene.width, scene.height);
     std::size_t offset = 0;
     for (int y = 0; y < scene.height; ++y) {
@@ -27,7 +31,13 @@ Image renderScene(const Scene& scene, const RenderSettings& settings) {
                                           scene.height,
                                           x + 0.5,
                                           y + 0.5);
-            const Color color = traceRay(scene, ray, settings.maxDepth);
+            if (stats) {
+                ++stats->primaryRays;
+            }
+            const Color color = traceRay(scene,
+                                         ray,
+                                         settings.maxDepth,
+                                         stats);
             const Color clamped = clampColor(color);
             image.pixels[offset++] = static_cast<unsigned char>(
                 std::lround(clamped.x * 255.0));
@@ -36,6 +46,11 @@ Image renderScene(const Scene& scene, const RenderSettings& settings) {
             image.pixels[offset++] = static_cast<unsigned char>(
                 std::lround(clamped.z * 255.0));
         }
+    }
+    if (stats) {
+        const auto finished = std::chrono::steady_clock::now();
+        stats->renderMilliseconds =
+            std::chrono::duration<double, std::milli>(finished - started).count();
     }
     return image;
 }
