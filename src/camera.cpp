@@ -42,6 +42,20 @@ Ray makeCameraRay(const Camera& camera,
                   double pixel_x,
                   double pixel_y) {
     const CameraFrame frame = buildCameraFrame(camera, width, height);
+    return makeCameraRay(camera,
+                         frame,
+                         width,
+                         height,
+                         pixel_x,
+                         pixel_y);
+}
+
+Ray makeCameraRay(const Camera& camera,
+                  const CameraFrame& frame,
+                  int width,
+                  int height,
+                  double pixel_x,
+                  double pixel_y) {
     const double safe_width = static_cast<double>(std::max(1, width));
     const double safe_height = static_cast<double>(std::max(1, height));
     const double u =

@@ -43,10 +43,13 @@ Image renderScene(const Scene& scene,
                   RenderStats* stats) {
     const auto started = std::chrono::steady_clock::now();
     Image image(scene.width, scene.height);
+    const CameraFrame camera_frame =
+        buildCameraFrame(scene.camera, scene.width, scene.height);
     std::size_t offset = 0;
     for (int y = 0; y < scene.height; ++y) {
         for (int x = 0; x < scene.width; ++x) {
             const Ray ray = makeCameraRay(scene.camera,
+                                          camera_frame,
                                           scene.width,
                                           scene.height,
                                           x + 0.5,
