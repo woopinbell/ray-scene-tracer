@@ -32,7 +32,7 @@ ray::Scene makeDenseScene() {
                               ray::Color(0.75, 0.85, 1.0)));
 
     const ray::Material ground(ray::Color(0.35, 0.38, 0.42));
-    scene.addShape(std::make_shared<ray::Plane>(
+    scene.addShape(std::make_unique<ray::Plane>(
         ray::Vec3(0.0, -1.0, 0.0),
         ray::Vec3(0.0, 1.0, 0.0),
         ground));
@@ -46,7 +46,7 @@ ray::Scene makeDenseScene() {
                 0.2 + 0.6 * static_cast<double>(column % 5) / 4.0,
                 0.2 + 0.6 * static_cast<double>(row % 5) / 4.0,
                 0.25 + 0.5 * static_cast<double>((row + column) % 5) / 4.0);
-            scene.addShape(std::make_shared<ray::Sphere>(
+            scene.addShape(std::make_unique<ray::Sphere>(
                 ray::Vec3(x, y, z),
                 0.42,
                 ray::Material(color)));
