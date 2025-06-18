@@ -119,6 +119,7 @@ void testOutput() {
     std::remove(path.c_str());
 
     require(ppm == "P3\n2 1\n255\n255 0 16\n0 127 255\n", "PPM encoding");
+    require(ray::checksumHex(image) == "0fde7b4d509f1daf", "checksum golden");
 }
 
 void testImageDimensions() {
@@ -152,6 +153,7 @@ void testRenderGolden() {
         std::string(RAY_SOURCE_DIR) + "/scenes/basic.rt");
     const ray::Image image = ray::renderScene(scene);
     require(image.width == 640 && image.height == 360, "render dimensions");
+    require(ray::checksumHex(image) == "456dc8d87ebf194f", "render checksum");
 }
 
 }  // namespace
