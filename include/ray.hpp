@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ray/accel.hpp"
 #include "ray/camera.hpp"
 #include "ray/geometry.hpp"
 #include "ray/material.hpp"
