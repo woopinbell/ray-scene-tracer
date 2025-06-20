@@ -13,6 +13,10 @@ struct Aabb {
 
     bool isValid() const;
     Vec3 centroid() const;
+    bool intersect(const Ray& ray,
+                   double t_min,
+                   double t_max,
+                   double* entry = nullptr) const;
 };
 
 Aabb surroundingBox(const Aabb& left, const Aabb& right);
