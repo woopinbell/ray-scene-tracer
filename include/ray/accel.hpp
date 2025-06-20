@@ -2,6 +2,9 @@
 
 #include "ray/math.hpp"
 
+#include <cstdint>
+#include <vector>
+
 namespace ray {
 
 struct Aabb {
@@ -20,5 +23,33 @@ struct Aabb {
 };
 
 Aabb surroundingBox(const Aabb& left, const Aabb& right);
+
+struct BvhPrimitive {
+    std::uint32_t shapeIndex;
+    Aabb bounds;
+};
+
+struct BvhNode {
+    Aabb bounds;
+    std::uint32_t left = 0;
+    std::uint32_t right = 0;
+    std::uint32_t first = 0;
+    std::uint32_t count = 0;
+
+    bool isLeaf() const;
+};
+
+class Bvh {
+public:
+    void clear();
+    bool empty() const;
+
+    const std::vector<BvhNode>& nodes() const;
+    const std::vector<std::uint32_t>& primitiveIndices() const;
+
+private:
+    std::vector<BvhNode> nodes_;
+    std::vector<std::uint32_t> primitiveIndices_;
+};
 
 }  // namespace ray

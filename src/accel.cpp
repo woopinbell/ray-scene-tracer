@@ -92,4 +92,25 @@ Aabb surroundingBox(const Aabb& left, const Aabb& right) {
              std::max(left.maximum.z, right.maximum.z)));
 }
 
+bool BvhNode::isLeaf() const {
+    return count > 0;
+}
+
+void Bvh::clear() {
+    nodes_.clear();
+    primitiveIndices_.clear();
+}
+
+bool Bvh::empty() const {
+    return nodes_.empty();
+}
+
+const std::vector<BvhNode>& Bvh::nodes() const {
+    return nodes_;
+}
+
+const std::vector<std::uint32_t>& Bvh::primitiveIndices() const {
+    return primitiveIndices_;
+}
+
 }  // namespace ray
