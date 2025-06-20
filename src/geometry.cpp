@@ -71,6 +71,11 @@ std::string Sphere::typeName() const {
     return "sphere";
 }
 
+std::optional<Aabb> Sphere::bounds() const {
+    const Vec3 extent(radius, radius, radius);
+    return Aabb(center - extent, center + extent);
+}
+
 Plane::Plane(const Vec3& point_value,
              const Vec3& normal_value,
              const Material& material_value)
@@ -104,6 +109,10 @@ bool Plane::intersect(const Ray& ray,
 
 std::string Plane::typeName() const {
     return "plane";
+}
+
+std::optional<Aabb> Plane::bounds() const {
+    return std::nullopt;
 }
 
 Cylinder::Cylinder(const Vec3& center_value,
