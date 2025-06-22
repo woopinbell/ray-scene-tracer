@@ -483,6 +483,7 @@ Scene parseScene(std::istream& input, const std::string& source_name) {
         throw ParseError(
             source_name, 0, "missing C pos dir fov directive");
     }
+    scene.buildAcceleration();
     return scene;
 }
 

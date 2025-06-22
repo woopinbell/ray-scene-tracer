@@ -62,12 +62,19 @@ public:
 
     void addShape(std::unique_ptr<Shape> shape);
     void addLight(const Light& light);
+    void buildAcceleration();
+    bool accelerationReady() const;
     bool intersect(const Ray& ray,
                    double t_min,
                    double t_max,
                    HitRecord& hit,
                    AccelMode mode = AccelMode::Bvh,
                    RenderStats* stats = nullptr) const;
+
+private:
+    Bvh bvh_;
+    std::vector<std::uint32_t> unboundedIndices_;
+    bool accelerationReady_;
 };
 
 }  // namespace ray

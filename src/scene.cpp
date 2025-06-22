@@ -1,5 +1,8 @@
 #include "ray/scene.hpp"
 
+#include <optional>
+#include <utility>
+
 namespace ray {
 
 Material::Material() : albedo(1.0, 1.0, 1.0) {}
@@ -41,16 +44,51 @@ Scene::Scene()
       background(0.02, 0.03, 0.05),
       camera(),
       lights(),
-      shapes() {}
+      shapes(),
+      bvh_(),
+      unboundedIndices_(),
+      accelerationReady_(false) {}
 
 void Scene::addShape(std::unique_ptr<Shape> shape) {
     if (shape) {
         shapes.push_back(std::move(shape));
+        bvh_.clear();
+        unboundedIndices_.clear();
+        accelerationReady_ = false;
     }
 }
 
 void Scene::addLight(const Light& light) {
     lights.push_back(light);
+}
+
+void Scene::buildAcceleration() {
+    std::vector<BvhPrimitive> bounded;
+    unboundedIndices_.clear();
+    bounded.reserve(shapes.size());
+    unboundedIndices_.reserve(shapes.size());
+
+    for (std::size_t index = 0; index < shapes.size(); ++index) {
+        if (!shapes[index]) {
+            continue;
+        }
+        const std::optional<Aabb> shape_bounds = shapes[index]->bounds();
+        if (shape_bounds && shape_bounds->isValid()) {
+            bounded.push_back(BvhPrimitive{
+                static_cast<std::uint32_t>(index),
+                *shape_bounds
+            });
+        } else {
+            unboundedIndices_.push_back(
+                static_cast<std::uint32_t>(index));
+        }
+    }
+    bvh_.build(std::move(bounded));
+    accelerationReady_ = true;
+}
+
+bool Scene::accelerationReady() const {
+    return accelerationReady_;
 }
 
 bool Scene::intersect(const Ray& ray,
