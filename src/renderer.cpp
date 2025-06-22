@@ -29,7 +29,8 @@ RenderSettings::RenderSettings()
     : samplesPerPixel(1),
       maxDepth(1),
       tMin(kRayTMin),
-      tMax(std::numeric_limits<double>::infinity()) {}
+      tMax(std::numeric_limits<double>::infinity()),
+      accelMode(AccelMode::Bvh) {}
 
 Image::Image() : width(0), height(0), pixels() {}
 
@@ -60,6 +61,7 @@ Image renderScene(const Scene& scene,
             const Color color = traceRay(scene,
                                          ray,
                                          settings.maxDepth,
+                                         settings.accelMode,
                                          stats);
             const Color clamped = clampColor(color);
             image.pixels[offset++] = static_cast<unsigned char>(

@@ -10,25 +10,29 @@ bool findNearestHit(const Scene& scene,
                     HitRecord& hit,
                     double t_min,
                     double t_max,
+                    AccelMode mode,
                     RenderStats* stats) {
-    return scene.intersect(ray, t_min, t_max, hit, stats);
+    return scene.intersect(ray, t_min, t_max, hit, mode, stats);
 }
 
 bool isOccluded(const Scene& scene,
                 const Ray& shadow_ray,
                 double max_distance,
+                AccelMode mode,
                 RenderStats* stats) {
     HitRecord ignored;
     return scene.intersect(shadow_ray,
                            kRayTMin,
                            std::max(kRayTMin, max_distance - kRayTMin),
                            ignored,
+                           mode,
                            stats);
 }
 
 Color shadeHit(const Scene& scene,
                const HitRecord& hit,
                const Ray& view_ray,
+               AccelMode mode,
                RenderStats* stats) {
     (void)view_ray;
 
@@ -56,6 +60,7 @@ Color shadeHit(const Scene& scene,
         if (isOccluded(scene,
                        Ray(shadow_origin, light_direction),
                        distance_to_light,
+                       mode,
                        stats)) {
             continue;
         }
@@ -70,6 +75,7 @@ Color shadeHit(const Scene& scene,
 Color traceRay(const Scene& scene,
                const Ray& ray,
                int max_depth,
+               AccelMode mode,
                RenderStats* stats) {
     (void)max_depth;
 
@@ -78,10 +84,11 @@ Color traceRay(const Scene& scene,
                          kRayTMin,
                          std::numeric_limits<double>::infinity(),
                          hit,
+                         mode,
                          stats)) {
         return scene.background;
     }
-    return shadeHit(scene, hit, ray, stats);
+    return shadeHit(scene, hit, ray, mode, stats);
 }
 
 }  // namespace ray

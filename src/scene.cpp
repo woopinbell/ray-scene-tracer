@@ -57,23 +57,39 @@ bool Scene::intersect(const Ray& ray,
                       double t_min,
                       double t_max,
                       HitRecord& hit,
+                      AccelMode mode,
                       RenderStats* stats) const {
+    (void)mode;
     bool found = false;
     double closest = t_max;
+    std::uint32_t best_index = 0;
     HitRecord candidate;
 
-    for (const std::unique_ptr<Shape>& shape : shapes) {
-        if (!shape) {
-            continue;
-        }
-        if (stats) {
-            ++stats->primitiveTests;
-        }
-        if (shape->intersect(ray, t_min, closest, candidate)) {
-            found = true;
-            closest = candidate.t;
-            hit = candidate;
-        }
+    const auto test_shape =
+        [&](std::uint32_t index) {
+            const std::unique_ptr<Shape>& shape = shapes[index];
+            if (!shape) {
+                return;
+            }
+            if (stats) {
+                ++stats->primitiveTests;
+            }
+            if (!shape->intersect(
+                    ray, t_min, closest, candidate)) {
+                return;
+            }
+            if (!found ||
+                candidate.t < closest ||
+                (candidate.t == closest && index > best_index)) {
+                found = true;
+                closest = candidate.t;
+                best_index = index;
+                hit = candidate;
+            }
+        };
+
+    for (std::size_t index = 0; index < shapes.size(); ++index) {
+        test_shape(static_cast<std::uint32_t>(index));
     }
     return found;
 }
