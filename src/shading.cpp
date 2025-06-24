@@ -88,6 +88,26 @@ Color traceRay(const Scene& scene,
                          stats)) {
         return scene.background;
     }
+    if (hit.material.type == MaterialType::Metal) {
+        if (max_depth <= 0) {
+            return Color();
+        }
+        const Vec3 reflected_direction =
+            ray.direction -
+            hit.normal * (2.0 * dot(ray.direction, hit.normal));
+        const Ray reflected_ray(
+            hit.point + hit.normal * kRayTMin,
+            reflected_direction);
+        if (stats) {
+            ++stats->secondaryRays;
+        }
+        return hit.material.albedo *
+               traceRay(scene,
+                        reflected_ray,
+                        max_depth - 1,
+                        mode,
+                        stats);
+    }
     return shadeHit(scene, hit, ray, mode, stats);
 }
 
