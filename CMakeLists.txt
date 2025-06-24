@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.16)
 
 project(ray_scene_tracer LANGUAGES CXX)
 
+find_package(Threads REQUIRED)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -18,6 +20,7 @@ add_library(raycore
     src/shading.cpp
 )
 target_include_directories(raycore PUBLIC include)
+target_link_libraries(raycore PUBLIC Threads::Threads)
 
 if(MSVC)
     target_compile_options(raycore PRIVATE /W4)
