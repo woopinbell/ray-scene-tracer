@@ -57,6 +57,10 @@ if(BUILD_TESTING)
     )
     add_test(NAME material_regression COMMAND ray-material-tests)
 
+    add_executable(ray-render-tests tests/render_tests.cpp)
+    target_link_libraries(ray-render-tests PRIVATE raycore)
+    add_test(NAME render_determinism COMMAND ray-render-tests)
+
     add_test(
         NAME render_smoke
         COMMAND bash
