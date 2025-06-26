@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.16)
 project(ray_scene_tracer LANGUAGES CXX)
 
 find_package(Threads REQUIRED)
+option(RAY_ENABLE_SANITIZERS "Enable AddressSanitizer and UBSan" OFF)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -26,6 +27,21 @@ if(MSVC)
     target_compile_options(raycore PRIVATE /W4)
 else()
     target_compile_options(raycore PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
+if(RAY_ENABLE_SANITIZERS)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+        target_compile_options(
+            raycore
+            PUBLIC -fsanitize=address,undefined -fno-omit-frame-pointer
+        )
+        target_link_options(
+            raycore
+            PUBLIC -fsanitize=address,undefined
+        )
+    else()
+        message(FATAL_ERROR "Sanitizers require Clang or GCC")
+    endif()
 endif()
 
 add_executable(ray-scene-tracer src/main.cpp)
