@@ -16,7 +16,8 @@ struct CliOptions {
 void printUsage() {
     std::cerr
         << "usage: ray-scene-tracer <scene.rt> <output.ppm>"
-        << " [--checksum]\n";
+        << " [--checksum]"
+        << " [--accel linear|bvh]\n";
 }
 
 bool parseCli(int argc, char** argv, CliOptions& options) {
@@ -27,6 +28,7 @@ bool parseCli(int argc, char** argv, CliOptions& options) {
     options.outputPath = argv[2];
 
     bool seen_checksum = false;
+    bool seen_accel = false;
 
     for (int index = 3; index < argc; ++index) {
         const std::string option = argv[index];
@@ -36,6 +38,24 @@ bool parseCli(int argc, char** argv, CliOptions& options) {
             }
             seen_checksum = true;
             options.printChecksum = true;
+            continue;
+        }
+
+        if (option == "--accel") {
+            if (seen_accel || index + 1 >= argc) {
+                return false;
+            }
+            seen_accel = true;
+            const std::string value = argv[++index];
+            if (value == "linear") {
+                options.renderSettings.accelMode =
+                    ray::AccelMode::Linear;
+            } else if (value == "bvh") {
+                options.renderSettings.accelMode =
+                    ray::AccelMode::Bvh;
+            } else {
+                return false;
+            }
             continue;
         }
         return false;
