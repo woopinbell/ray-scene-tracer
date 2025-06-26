@@ -10,20 +10,19 @@ if [[ $# -eq 0 ]]; then
     make -C "$ROOT" >/dev/null
 fi
 
-BAD_SCENE="$TMP/bad.rt"
+BAD_SCENE="$ROOT/scenes/invalid.rt"
 BAD_OUT="$TMP/bad.ppm"
-cat >"$BAD_SCENE" <<'SCENE'
-R 16 8
-C 0,0,3 0,0,-1 60
-not_a_shape 1 2 3
-SCENE
 
 if "$BIN" "$BAD_SCENE" "$BAD_OUT" >"$TMP/bad.stdout" 2>"$TMP/bad.stderr"; then
-    echo "expected parser failure for unknown directive" >&2
+    echo "expected parser failure for invalid ambient ratio" >&2
     exit 1
 fi
 if [[ -s "$BAD_OUT" ]]; then
     echo "parser failure should not leave a rendered image" >&2
+    exit 1
+fi
+if ! grep -q 'invalid.rt:3:' "$TMP/bad.stderr"; then
+    echo "expected invalid.rt line 3 in parser error" >&2
     exit 1
 fi
 
@@ -44,17 +43,19 @@ PPM_TWO="$TMP/two.ppm"
 CHECK_ONE=$("$BIN" "$SCENE_FILE" "$PPM_ONE" --checksum)
 CHECK_TWO=$("$BIN" "$SCENE_FILE" "$PPM_TWO" --checksum)
 
-mapfile -t HEADER < <(head -n 3 "$PPM_ONE")
-if [[ "${HEADER[0]}" != "P3" ]]; then
-    echo "expected P3 PPM magic, got ${HEADER[0]}" >&2
+MAGIC=$(sed -n '1p' "$PPM_ONE")
+DIMENSIONS=$(sed -n '2p' "$PPM_ONE")
+MAX_CHANNEL=$(sed -n '3p' "$PPM_ONE")
+if [[ "$MAGIC" != "P3" ]]; then
+    echo "expected P3 PPM magic, got $MAGIC" >&2
     exit 1
 fi
-if [[ "${HEADER[1]}" != "64 32" ]]; then
-    echo "expected PPM dimensions 64 32, got ${HEADER[1]}" >&2
+if [[ "$DIMENSIONS" != "64 32" ]]; then
+    echo "expected PPM dimensions 64 32, got $DIMENSIONS" >&2
     exit 1
 fi
-if [[ "${HEADER[2]}" != "255" ]]; then
-    echo "expected PPM max channel 255, got ${HEADER[2]}" >&2
+if [[ "$MAX_CHANNEL" != "255" ]]; then
+    echo "expected PPM max channel 255, got $MAX_CHANNEL" >&2
     exit 1
 fi
 
