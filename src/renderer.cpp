@@ -31,7 +31,7 @@ std::size_t pixelStorageSize(int width, int height) {
 
 RenderSettings::RenderSettings()
     : samplesPerPixel(1),
-      maxDepth(1),
+      maxDepth(4),
       tMin(kRayTMin),
       tMax(std::numeric_limits<double>::infinity()),
       accelMode(AccelMode::Bvh),
