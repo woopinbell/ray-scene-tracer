@@ -62,6 +62,14 @@ if(BUILD_TESTING)
     add_test(NAME render_determinism COMMAND ray-render-tests)
 
     add_test(
+        NAME cli_contract
+        COMMAND bash
+                ${CMAKE_CURRENT_SOURCE_DIR}/tests/cli_contract.sh
+                $<TARGET_FILE:ray-scene-tracer>
+                ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+
+    add_test(
         NAME render_smoke
         COMMAND bash
                 ${CMAKE_CURRENT_SOURCE_DIR}/tests/render_smoke.sh
