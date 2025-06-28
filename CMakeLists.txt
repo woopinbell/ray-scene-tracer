@@ -77,6 +77,10 @@ if(BUILD_TESTING)
     target_link_libraries(ray-render-tests PRIVATE raycore)
     add_test(NAME render_determinism COMMAND ray-render-tests)
 
+    add_executable(ray-output-tests tests/output_tests.cpp)
+    target_link_libraries(ray-output-tests PRIVATE raycore)
+    add_test(NAME output_failure_regression COMMAND ray-output-tests)
+
     add_test(
         NAME cli_contract
         COMMAND bash
