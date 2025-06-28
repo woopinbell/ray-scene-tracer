@@ -9,6 +9,7 @@
 namespace ray {
 
 void writePpm(const Image& image, const std::string& path) {
+    image.validate();
     std::ofstream output(path);
     if (!output) {
         throw std::runtime_error("cannot open output file: " + path);
@@ -29,6 +30,7 @@ void writePpm(const Image& image, const std::string& path) {
 }
 
 std::string checksumHex(const Image& image) {
+    image.validate();
     std::uint64_t hash = 14695981039346656037ULL;
     const auto mix = [&hash](unsigned char value) {
         hash ^= static_cast<std::uint64_t>(value);

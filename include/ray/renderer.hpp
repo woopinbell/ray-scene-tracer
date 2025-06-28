@@ -25,6 +25,8 @@ struct Image {
 
     Image();
     Image(int width_value, int height_value);
+
+    void validate() const;
 };
 
 bool findNearestHit(const Scene& scene,
