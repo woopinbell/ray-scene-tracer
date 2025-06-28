@@ -86,6 +86,9 @@ Sample measure(const ray::Scene& scene, ray::AccelMode mode) {
     const Sample median = samples[samples.size() / 2];
     for (const Sample& sample : samples) {
         if (sample.checksum != median.checksum ||
+            sample.stats.primaryRays != median.stats.primaryRays ||
+            sample.stats.secondaryRays != median.stats.secondaryRays ||
+            sample.stats.shadowRays != median.stats.shadowRays ||
             sample.stats.primitiveTests != median.stats.primitiveTests ||
             sample.stats.aabbTests != median.stats.aabbTests) {
             throw std::runtime_error(
@@ -105,6 +108,8 @@ void printResult(const std::string& name,
               << sample.stats.primaryRays << ",\n"
               << "      \"shadowRays\": "
               << sample.stats.shadowRays << ",\n"
+              << "      \"secondaryRays\": "
+              << sample.stats.secondaryRays << ",\n"
               << "      \"aabbTests\": "
               << sample.stats.aabbTests << ",\n"
               << "      \"primitiveTests\": "
@@ -124,18 +129,41 @@ int main() {
         throw std::runtime_error(
             "linear and BVH renders produced different images");
     }
+    if (bvh.stats.primitiveTests * 4 >=
+        linear.stats.primitiveTests) {
+        throw std::runtime_error(
+            "BVH did not reduce primitive tests below 25 percent");
+    }
+    const double primitive_ratio =
+        static_cast<double>(bvh.stats.primitiveTests) /
+        static_cast<double>(linear.stats.primitiveTests);
+    const double speedup =
+        linear.milliseconds / bvh.milliseconds;
 
     std::cout << std::fixed << std::setprecision(3)
               << "{\n"
-              << "  \"scene\": \"dense-20x20\",\n"
-              << "  \"width\": 640,\n"
-              << "  \"height\": 360,\n"
-              << "  \"warmupRuns\": 1,\n"
-              << "  \"measuredRuns\": 5,\n"
+              << "  \"schemaVersion\": 1,\n"
+              << "  \"configuration\": {\n"
+              << "    \"scene\": \"dense-20x20\",\n"
+              << "    \"width\": 640,\n"
+              << "    \"height\": 360,\n"
+              << "    \"spheres\": 400,\n"
+              << "    \"planes\": 1,\n"
+              << "    \"lights\": 2,\n"
+              << "    \"threads\": 1,\n"
+              << "    \"maxDepth\": 4,\n"
+              << "    \"tileSize\": 16,\n"
+              << "    \"warmupRuns\": 1,\n"
+              << "    \"measuredRuns\": 5\n"
+              << "  },\n"
               << "  \"results\": {\n";
     printResult("linear", linear, true);
-    printResult("bvh", bvh, false);
-    std::cout << "  }\n"
+    printResult("bvh", bvh, true);
+    std::cout << "    \"primitiveTestRatio\": "
+              << primitive_ratio << ",\n"
+              << "    \"medianSpeedup\": "
+              << speedup << "\n"
+              << "  }\n"
               << "}\n";
     return 0;
 }
