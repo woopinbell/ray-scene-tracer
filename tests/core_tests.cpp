@@ -178,6 +178,46 @@ void testOutput() {
     require(ray::checksumHex(image) == "0fde7b4d509f1daf", "checksum golden");
 }
 
+void testInvalidImageStorage() {
+    ray::Image image(2, 1);
+    image.pixels.pop_back();
+
+    bool checksum_rejected = false;
+    try {
+        (void)ray::checksumHex(image);
+    } catch (const std::invalid_argument&) {
+        checksum_rejected = true;
+    }
+    require(checksum_rejected, "checksum rejects short pixel storage");
+
+    const std::string path = "ray-core-test-preserved-output.ppm";
+    {
+        std::ofstream output(path);
+        output << "preserve me\n";
+    }
+    bool output_rejected = false;
+    try {
+        ray::writePpm(image, path);
+    } catch (const std::invalid_argument&) {
+        output_rejected = true;
+    }
+    const std::string preserved = readFile(path);
+    std::remove(path.c_str());
+    require(output_rejected, "PPM writer rejects short pixel storage");
+    require(preserved == "preserve me\n",
+            "invalid image does not truncate existing output");
+
+    image.pixels.push_back(0);
+    image.pixels.push_back(0);
+    bool oversized_rejected = false;
+    try {
+        image.validate();
+    } catch (const std::invalid_argument&) {
+        oversized_rejected = true;
+    }
+    require(oversized_rejected, "image rejects excess pixel storage");
+}
+
 void testCameraFrameReuse() {
     const ray::Camera camera(ray::Vec3(1.0, 2.0, -3.0),
                              ray::Vec3(-0.1, 0.25, 1.0),
@@ -238,6 +278,7 @@ int main() {
         testImageDimensions();
         testCameraFrameReuse();
         testOutput();
+        testInvalidImageStorage();
         testRenderGolden();
     } catch (const std::exception& error) {
         std::cerr << "core regression failed: " << error.what() << '\n';
