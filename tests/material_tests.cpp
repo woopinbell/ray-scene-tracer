@@ -28,7 +28,7 @@ void testMaterialParsing() {
     const ray::Scene omitted = ray::parser::parseSceneText(
         scenePrefix() + "sp 0,0,5 2 255,0,0\n",
         "omitted.rt");
-    require(omitted.shapes[0]->material().type ==
+    require(omitted.shapeAt(0).material().type ==
                 ray::MaterialType::Diffuse,
             "omitted material defaults to diffuse");
 
@@ -38,11 +38,11 @@ void testMaterialParsing() {
             "pl 0,-1,0 0,1,0 255,255,255 diffuse\n"
             "cy 2,0,5 0,1,0 1 2 0,0,255 metal\n",
         "materials.rt");
-    require(explicit_types.shapes[0]->material().type ==
+    require(explicit_types.shapeAt(0).material().type ==
                 ray::MaterialType::Metal &&
-                explicit_types.shapes[1]->material().type ==
+                explicit_types.shapeAt(1).material().type ==
                     ray::MaterialType::Diffuse &&
-                explicit_types.shapes[2]->material().type ==
+                explicit_types.shapeAt(2).material().type ==
                     ray::MaterialType::Metal,
             "explicit material parsing");
 

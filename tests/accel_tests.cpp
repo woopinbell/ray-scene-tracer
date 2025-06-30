@@ -111,7 +111,8 @@ void testEqualDistanceTie() {
         ray::Vec3(0.0, 0.0, 5.0),
         1.0,
         ray::Material(ray::Color(0.0, 1.0, 0.0))));
-    const ray::Shape* expected = scene.shapes.back().get();
+    const ray::Shape* expected =
+        &scene.shapeAt(scene.shapeCount() - 1);
     scene.buildAcceleration();
 
     ray::HitRecord linear_hit;

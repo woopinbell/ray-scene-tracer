@@ -48,18 +48,26 @@ Scene::Scene()
       background(0.02, 0.03, 0.05),
       camera(),
       lights(),
-      shapes(),
+      shapes_(),
       bvh_(),
       unboundedIndices_(),
       accelerationReady_(false) {}
 
 void Scene::addShape(std::unique_ptr<Shape> shape) {
     if (shape) {
-        shapes.push_back(std::move(shape));
+        shapes_.push_back(std::move(shape));
         bvh_.clear();
         unboundedIndices_.clear();
         accelerationReady_ = false;
     }
+}
+
+std::size_t Scene::shapeCount() const {
+    return shapes_.size();
+}
+
+const Shape& Scene::shapeAt(std::size_t index) const {
+    return *shapes_.at(index);
 }
 
 void Scene::addLight(const Light& light) {
@@ -69,14 +77,15 @@ void Scene::addLight(const Light& light) {
 void Scene::buildAcceleration() {
     std::vector<BvhPrimitive> bounded;
     unboundedIndices_.clear();
-    bounded.reserve(shapes.size());
-    unboundedIndices_.reserve(shapes.size());
+    bounded.reserve(shapes_.size());
+    unboundedIndices_.reserve(shapes_.size());
 
-    for (std::size_t index = 0; index < shapes.size(); ++index) {
-        if (!shapes[index]) {
+    for (std::size_t index = 0; index < shapes_.size(); ++index) {
+        if (!shapes_[index]) {
             continue;
         }
-        const std::optional<Aabb> shape_bounds = shapes[index]->bounds();
+        const std::optional<Aabb> shape_bounds =
+            shapes_[index]->bounds();
         if (shape_bounds && shape_bounds->isValid()) {
             bounded.push_back(BvhPrimitive{
                 static_cast<std::uint32_t>(index),
@@ -108,7 +117,7 @@ bool Scene::intersect(const Ray& ray,
 
     const auto test_shape =
         [&](std::uint32_t index) {
-            const std::unique_ptr<Shape>& shape = shapes[index];
+            const std::unique_ptr<Shape>& shape = shapes_[index];
             if (!shape) {
                 return;
             }
@@ -130,7 +139,7 @@ bool Scene::intersect(const Ray& ray,
         };
 
     if (mode == AccelMode::Linear || !accelerationReady_) {
-        for (std::size_t index = 0; index < shapes.size(); ++index) {
+        for (std::size_t index = 0; index < shapes_.size(); ++index) {
             test_shape(static_cast<std::uint32_t>(index));
         }
         return found;
