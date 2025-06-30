@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
-BIN=${1:-"$ROOT/ray-scene-tracer"}
+BIN=${1:-"$ROOT/build/bin/ray-scene-tracer"}
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 
