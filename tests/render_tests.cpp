@@ -1,6 +1,8 @@
 #include "ray.hpp"
 
 #include <iostream>
+#include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 
@@ -60,6 +62,46 @@ void requireSameWork(const Result& left,
             label + " AABB tests");
 }
 
+class ThrowingShape : public ray::Shape {
+public:
+    bool intersect(const ray::Ray&,
+                   double,
+                   double,
+                   ray::HitRecord&) const override {
+        throw std::runtime_error("worker exception sentinel");
+    }
+
+    std::optional<ray::Aabb> bounds() const override {
+        return std::nullopt;
+    }
+
+    std::string typeName() const override {
+        return "throwing";
+    }
+};
+
+void testWorkerExceptionPropagation() {
+    ray::Scene scene;
+    scene.width = 32;
+    scene.height = 16;
+    scene.camera = ray::Camera(
+        ray::Vec3(), ray::Vec3(0.0, 0.0, 1.0), 60.0);
+    scene.addShape(std::make_unique<ThrowingShape>());
+    scene.buildAcceleration();
+
+    ray::RenderSettings settings;
+    settings.threadCount = 4;
+    bool propagated = false;
+    try {
+        (void)ray::renderScene(scene, settings);
+    } catch (const std::runtime_error& error) {
+        propagated =
+            std::string(error.what()) == "worker exception sentinel";
+    }
+    require(propagated,
+            "renderScene propagates an exception from a worker");
+}
+
 }  // namespace
 
 int main() {
@@ -90,6 +132,7 @@ int main() {
                         "BVH thread count");
         require(linear_one.stats.primaryRays == 96u * 54u,
                 "primary ray count");
+        testWorkerExceptionPropagation();
     } catch (const std::exception& error) {
         std::cerr << "render determinism failed: "
                   << error.what() << '\n';
