@@ -47,4 +47,14 @@ Color clampColor(const Color& value,
                  double min_value = 0.0,
                  double max_value = 1.0);
 
+struct Ray {
+    Vec3 origin;
+    Vec3 direction;
+
+    Ray();
+    Ray(const Vec3& origin_value, const Vec3& direction_value);
+
+    Vec3 at(double t) const;
+};
+
 }  // namespace ray
