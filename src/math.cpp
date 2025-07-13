@@ -1,6 +1,8 @@
 #include "ray/math.hpp"
 
+#include <algorithm>
 #include <cmath>
+#include <ostream>
 
 namespace ray {
 
@@ -39,6 +41,10 @@ Vec3 operator-(const Vec3& value) {
     return Vec3(-value.x, -value.y, -value.z);
 }
 
+Vec3 operator*(const Vec3& left, const Vec3& right) {
+    return Vec3(left.x * right.x, left.y * right.y, left.z * right.z);
+}
+
 Vec3 operator*(const Vec3& value, double scalar) {
     return Vec3(value.x * scalar, value.y * scalar, value.z * scalar);
 }
@@ -49,6 +55,47 @@ Vec3 operator*(double scalar, const Vec3& value) {
 
 Vec3 operator/(const Vec3& value, double scalar) {
     return Vec3(value.x / scalar, value.y / scalar, value.z / scalar);
+}
+
+Vec3& operator+=(Vec3& left, const Vec3& right) {
+    left.x += right.x;
+    left.y += right.y;
+    left.z += right.z;
+    return left;
+}
+
+Vec3& operator-=(Vec3& left, const Vec3& right) {
+    left.x -= right.x;
+    left.y -= right.y;
+    left.z -= right.z;
+    return left;
+}
+
+Vec3& operator*=(Vec3& value, double scalar) {
+    value.x *= scalar;
+    value.y *= scalar;
+    value.z *= scalar;
+    return value;
+}
+
+Vec3& operator/=(Vec3& value, double scalar) {
+    value.x /= scalar;
+    value.y /= scalar;
+    value.z /= scalar;
+    return value;
+}
+
+bool operator==(const Vec3& left, const Vec3& right) {
+    return left.x == right.x && left.y == right.y && left.z == right.z;
+}
+
+bool operator!=(const Vec3& left, const Vec3& right) {
+    return !(left == right);
+}
+
+std::ostream& operator<<(std::ostream& stream, const Vec3& value) {
+    stream << value.x << ',' << value.y << ',' << value.z;
+    return stream;
 }
 
 double dot(const Vec3& left, const Vec3& right) {
@@ -71,6 +118,16 @@ Vec3 normalize(const Vec3& value) {
         return Vec3();
     }
     return value / len;
+}
+
+double clamp(double value, double min_value, double max_value) {
+    return std::max(min_value, std::min(value, max_value));
+}
+
+Color clampColor(const Color& value, double min_value, double max_value) {
+    return Color(clamp(value.x, min_value, max_value),
+                 clamp(value.y, min_value, max_value),
+                 clamp(value.z, min_value, max_value));
 }
 
 }  // namespace ray
