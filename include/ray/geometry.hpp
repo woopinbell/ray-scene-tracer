@@ -68,4 +68,24 @@ public:
     std::string typeName() const override;
 };
 
+class Cylinder : public Shape {
+public:
+    Vec3 center;
+    Vec3 axis;
+    double radius;
+    double height;
+
+    Cylinder(const Vec3& center_value,
+             const Vec3& axis_value,
+             double radius_value,
+             double height_value,
+             const Material& material_value);
+
+    bool intersect(const Ray& ray,
+                   double t_min,
+                   double t_max,
+                   HitRecord& hit) const override;
+    std::string typeName() const override;
+};
+
 }  // namespace ray
