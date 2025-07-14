@@ -52,4 +52,20 @@ public:
     std::string typeName() const override;
 };
 
+class Plane : public Shape {
+public:
+    Vec3 point;
+    Vec3 normal;
+
+    Plane(const Vec3& point_value,
+          const Vec3& normal_value,
+          const Material& material_value);
+
+    bool intersect(const Ray& ray,
+                   double t_min,
+                   double t_max,
+                   HitRecord& hit) const override;
+    std::string typeName() const override;
+};
+
 }  // namespace ray
