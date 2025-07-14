@@ -36,4 +36,20 @@ protected:
     Material material_;
 };
 
+class Sphere : public Shape {
+public:
+    Vec3 center;
+    double radius;
+
+    Sphere(const Vec3& center_value,
+           double radius_value,
+           const Material& material_value);
+
+    bool intersect(const Ray& ray,
+                   double t_min,
+                   double t_max,
+                   HitRecord& hit) const override;
+    std::string typeName() const override;
+};
+
 }  // namespace ray
