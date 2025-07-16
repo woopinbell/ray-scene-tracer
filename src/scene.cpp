@@ -43,8 +43,35 @@ Scene::Scene()
       lights(),
       shapes() {}
 
+void Scene::addShape(const std::shared_ptr<Shape>& shape) {
+    if (shape) {
+        shapes.push_back(shape);
+    }
+}
+
 void Scene::addLight(const Light& light) {
     lights.push_back(light);
+}
+
+bool Scene::intersect(const Ray& ray,
+                      double t_min,
+                      double t_max,
+                      HitRecord& hit) const {
+    bool found = false;
+    double closest = t_max;
+    HitRecord candidate;
+
+    for (const std::shared_ptr<Shape>& shape : shapes) {
+        if (!shape) {
+            continue;
+        }
+        if (shape->intersect(ray, t_min, closest, candidate)) {
+            found = true;
+            closest = candidate.t;
+            hit = candidate;
+        }
+    }
+    return found;
 }
 
 }  // namespace ray

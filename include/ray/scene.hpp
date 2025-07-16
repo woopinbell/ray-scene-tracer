@@ -46,7 +46,12 @@ public:
 
     Scene();
 
+    void addShape(const std::shared_ptr<Shape>& shape);
     void addLight(const Light& light);
+    bool intersect(const Ray& ray,
+                   double t_min,
+                   double t_max,
+                   HitRecord& hit) const;
 };
 
 }  // namespace ray
