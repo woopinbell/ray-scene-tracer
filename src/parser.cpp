@@ -48,6 +48,21 @@ std::string makeParseMessage(const std::string& source_name,
     return tokens;
 }
 
+std::vector<std::string> splitCommas(const std::string& token) {
+    std::vector<std::string> parts;
+    std::size_t start = 0;
+    while (start <= token.size()) {
+        const std::size_t comma = token.find(',', start);
+        if (comma == std::string::npos) {
+            parts.push_back(token.substr(start));
+            break;
+        }
+        parts.push_back(token.substr(start, comma - start));
+        start = comma + 1;
+    }
+    return parts;
+}
+
 [[maybe_unused]] void expectCount(const std::vector<std::string>& tokens,
                  std::size_t expected,
                  const std::string& source_name,
@@ -125,6 +140,71 @@ double parseDoubleToken(const std::string& token,
                          field_name + " must be positive");
     }
     return value;
+}
+
+[[maybe_unused]] Vec3 parseVec3(const std::string& token,
+               const std::string& source_name,
+               std::size_t line_number,
+               const std::string& field_name) {
+    const std::vector<std::string> parts = splitCommas(token);
+    if (parts.size() != 3 ||
+        parts[0].empty() ||
+        parts[1].empty() ||
+        parts[2].empty()) {
+        throw ParseError(source_name,
+                         line_number,
+                         field_name + " must use x,y,z format");
+    }
+    return Vec3(
+        parseDoubleToken(parts[0],
+                         source_name,
+                         line_number,
+                         field_name + ".x"),
+        parseDoubleToken(parts[1],
+                         source_name,
+                         line_number,
+                         field_name + ".y"),
+        parseDoubleToken(parts[2],
+                         source_name,
+                         line_number,
+                         field_name + ".z"));
+}
+
+[[maybe_unused]] Color parseColor(const std::string& token,
+                 const std::string& source_name,
+                 std::size_t line_number,
+                 const std::string& field_name) {
+    const std::vector<std::string> parts = splitCommas(token);
+    if (parts.size() != 3 ||
+        parts[0].empty() ||
+        parts[1].empty() ||
+        parts[2].empty()) {
+        throw ParseError(source_name,
+                         line_number,
+                         field_name + " must use r,g,b format");
+    }
+
+    int channels[3] = {};
+    for (std::size_t index = 0; index < 3; ++index) {
+        try {
+            std::size_t parsed = 0;
+            const long long value = std::stoll(parts[index], &parsed);
+            if (parsed != parts[index].size() ||
+                value < 0 ||
+                value > 255) {
+                throw std::invalid_argument("not a byte");
+            }
+            channels[index] = static_cast<int>(value);
+        } catch (const std::exception&) {
+            throw ParseError(source_name,
+                             line_number,
+                             "invalid " + field_name + " channel '" +
+                                 parts[index] + "'");
+        }
+    }
+    return Color(static_cast<double>(channels[0]) / 255.0,
+                 static_cast<double>(channels[1]) / 255.0,
+                 static_cast<double>(channels[2]) / 255.0);
 }
 
 }  // namespace
