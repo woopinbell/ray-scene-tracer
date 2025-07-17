@@ -23,7 +23,7 @@ std::string makeParseMessage(const std::string& source_name,
     return output.str();
 }
 
-[[maybe_unused]] std::string trim(const std::string& value) {
+std::string trim(const std::string& value) {
     std::size_t first = 0;
     while (first < value.size() &&
            std::isspace(static_cast<unsigned char>(value[first]))) {
@@ -38,7 +38,7 @@ std::string makeParseMessage(const std::string& source_name,
     return value.substr(first, last - first);
 }
 
-[[maybe_unused]] std::vector<std::string> splitTokens(const std::string& line) {
+std::vector<std::string> splitTokens(const std::string& line) {
     std::vector<std::string> tokens;
     std::istringstream input(line);
     std::string token;
@@ -207,6 +207,28 @@ double parseDoubleToken(const std::string& token,
                  static_cast<double>(channels[2]) / 255.0);
 }
 
+[[maybe_unused]] void rejectDuplicate(bool already_seen,
+                     const std::string& source_name,
+                     std::size_t line_number,
+                     const std::string& directive) {
+    if (already_seen) {
+        throw ParseError(source_name,
+                         line_number,
+                         "duplicate " + directive + " directive");
+    }
+}
+
+[[maybe_unused]] void requireNonzeroVector(const Vec3& value,
+                          const std::string& source_name,
+                          std::size_t line_number,
+                          const std::string& field_name) {
+    if (value.isNearZero()) {
+        throw ParseError(source_name,
+                         line_number,
+                         field_name + " must not be the zero vector");
+    }
+}
+
 }  // namespace
 
 ParseError::ParseError(const std::string& source_name,
@@ -224,5 +246,36 @@ const std::string& ParseError::source() const noexcept {
 std::size_t ParseError::line() const noexcept {
     return line_;
 }
+
+namespace parser {
+
+Scene parseScene(std::istream& input, const std::string& source_name) {
+    Scene scene;
+    std::string line;
+    std::size_t line_number = 0;
+
+    while (std::getline(input, line)) {
+        ++line_number;
+        const std::size_t comment = line.find('#');
+        if (comment != std::string::npos) {
+            line.erase(comment);
+        }
+        line = trim(line);
+        if (line.empty()) {
+            continue;
+        }
+
+        const std::vector<std::string> tokens = splitTokens(line);
+        const std::string& id = tokens[0];
+
+            throw ParseError(source_name,
+                             line_number,
+                             "unknown directive '" + id + "'");
+    }
+
+    return scene;
+}
+
+}  // namespace parser
 
 }  // namespace ray
