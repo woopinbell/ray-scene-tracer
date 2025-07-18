@@ -3,6 +3,7 @@
 #include <cctype>
 #include <cmath>
 #include <limits>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -128,7 +129,7 @@ double parseRatio(const std::string& token,
     return value;
 }
 
-[[maybe_unused]] double parsePositiveDouble(const std::string& token,
+double parsePositiveDouble(const std::string& token,
                            const std::string& source_name,
                            std::size_t line_number,
                            const std::string& field_name) {
@@ -369,6 +370,58 @@ Scene parseScene(std::istream& input, const std::string& source_name) {
                            line_number,
                            "light color");
             scene.addLight(Light(position, brightness, color));
+        } else if (id == "sp") {
+            expectCount(tokens,
+                        4,
+                        source_name,
+                        line_number,
+                        "sp center diameter r,g,b");
+            const Vec3 center =
+                parseVec3(tokens[1],
+                          source_name,
+                          line_number,
+                          "sphere center");
+            const double diameter =
+                parsePositiveDouble(tokens[2],
+                                    source_name,
+                                    line_number,
+                                    "sphere diameter");
+            const Material material(
+                parseColor(tokens[3],
+                           source_name,
+                           line_number,
+                           "sphere color"));
+            scene.addShape(std::make_shared<Sphere>(
+                center,
+                diameter * 0.5,
+                material));
+        } else if (id == "pl") {
+            expectCount(tokens,
+                        4,
+                        source_name,
+                        line_number,
+                        "pl point normal r,g,b");
+            const Vec3 point =
+                parseVec3(tokens[1],
+                          source_name,
+                          line_number,
+                          "plane point");
+            const Vec3 normal =
+                parseVec3(tokens[2],
+                          source_name,
+                          line_number,
+                          "plane normal");
+            requireNonzeroVector(normal,
+                                 source_name,
+                                 line_number,
+                                 "plane normal");
+            const Material material(
+                parseColor(tokens[3],
+                           source_name,
+                           line_number,
+                           "plane color"));
+            scene.addShape(
+                std::make_shared<Plane>(point, normal, material));
         } else {
             throw ParseError(source_name,
                              line_number,
