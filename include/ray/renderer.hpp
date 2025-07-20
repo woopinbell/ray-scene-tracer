@@ -3,8 +3,27 @@
 #include "ray/camera.hpp"
 
 #include <limits>
+#include <vector>
 
 namespace ray {
+
+struct RenderSettings {
+    int samplesPerPixel;
+    int maxDepth;
+    double tMin;
+    double tMax;
+
+    RenderSettings();
+};
+
+struct Image {
+    int width;
+    int height;
+    std::vector<unsigned char> pixels;
+
+    Image();
+    Image(int width_value, int height_value);
+};
 
 bool findNearestHit(const Scene& scene,
                     const Ray& ray,
@@ -20,5 +39,7 @@ Color shadeHit(const Scene& scene,
 Color traceRay(const Scene& scene,
                const Ray& ray,
                int max_depth = 1);
+Image renderScene(const Scene& scene,
+                  const RenderSettings& settings = RenderSettings());
 
 }  // namespace ray
