@@ -1,19 +1,17 @@
-CXX ?= c++
-CPPFLAGS ?= -Iinclude
-CXXFLAGS ?= -std=c++17 -Wall -Wextra -Wpedantic -O2
-
-TARGET := ray-scene-tracer
-SRC := $(sort $(wildcard src/*.cpp))
+BUILD_DIR ?= build
+CMAKE ?= cmake
 
 .PHONY: all clean test
 
-all: $(TARGET)
+all:
+	$(CMAKE) -S . -B $(BUILD_DIR) -DCMAKE_BUILD_TYPE=Release
+	$(CMAKE) --build $(BUILD_DIR)
+	$(CMAKE) -E create_symlink $(BUILD_DIR)/ray-scene-tracer ray-scene-tracer
 
-$(TARGET): $(SRC)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $(SRC)
-
-test: $(TARGET)
-	tests/render_smoke.sh
+test:
+	$(CMAKE) -S . -B $(BUILD_DIR) -DCMAKE_BUILD_TYPE=Release
+	$(CMAKE) --build $(BUILD_DIR)
+	ctest --test-dir $(BUILD_DIR) --output-on-failure
 
 clean:
-	rm -f $(TARGET)
+	$(CMAKE) -E rm -rf $(BUILD_DIR) ray-scene-tracer
