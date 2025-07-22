@@ -29,17 +29,22 @@ bool findNearestHit(const Scene& scene,
                     const Ray& ray,
                     HitRecord& hit,
                     double t_min = kRayTMin,
-                    double t_max = std::numeric_limits<double>::infinity());
+                    double t_max = std::numeric_limits<double>::infinity(),
+                    RenderStats* stats = nullptr);
 bool isOccluded(const Scene& scene,
                 const Ray& shadow_ray,
-                double max_distance);
+                double max_distance,
+                RenderStats* stats = nullptr);
 Color shadeHit(const Scene& scene,
                const HitRecord& hit,
-               const Ray& view_ray);
+               const Ray& view_ray,
+               RenderStats* stats = nullptr);
 Color traceRay(const Scene& scene,
                const Ray& ray,
-               int max_depth = 1);
+               int max_depth = 1,
+               RenderStats* stats = nullptr);
 Image renderScene(const Scene& scene,
-                  const RenderSettings& settings = RenderSettings());
+                  const RenderSettings& settings = RenderSettings(),
+                  RenderStats* stats = nullptr);
 
 }  // namespace ray

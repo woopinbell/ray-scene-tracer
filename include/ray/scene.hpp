@@ -2,6 +2,7 @@
 
 #include "ray/geometry.hpp"
 
+#include <cstdint>
 #include <memory>
 #include <vector>
 
@@ -30,6 +31,15 @@ struct Camera {
            double fov_degrees_value);
 };
 
+struct RenderStats {
+    std::uint64_t primaryRays = 0;
+    std::uint64_t secondaryRays = 0;
+    std::uint64_t shadowRays = 0;
+    std::uint64_t primitiveTests = 0;
+    std::uint64_t aabbTests = 0;
+    double renderMilliseconds = 0.0;
+};
+
 class Scene {
 public:
     int width;
@@ -51,7 +61,8 @@ public:
     bool intersect(const Ray& ray,
                    double t_min,
                    double t_max,
-                   HitRecord& hit) const;
+                   HitRecord& hit,
+                   RenderStats* stats = nullptr) const;
 };
 
 }  // namespace ray

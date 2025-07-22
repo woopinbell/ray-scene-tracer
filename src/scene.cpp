@@ -56,7 +56,8 @@ void Scene::addLight(const Light& light) {
 bool Scene::intersect(const Ray& ray,
                       double t_min,
                       double t_max,
-                      HitRecord& hit) const {
+                      HitRecord& hit,
+                      RenderStats* stats) const {
     bool found = false;
     double closest = t_max;
     HitRecord candidate;
@@ -64,6 +65,9 @@ bool Scene::intersect(const Ray& ray,
     for (const std::shared_ptr<Shape>& shape : shapes) {
         if (!shape) {
             continue;
+        }
+        if (stats) {
+            ++stats->primitiveTests;
         }
         if (shape->intersect(ray, t_min, closest, candidate)) {
             found = true;
