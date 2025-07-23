@@ -1,9 +1,13 @@
 #include "ray.hpp"
 
+#include <algorithm>
 #include <chrono>
+#include <iomanip>
 #include <iostream>
 #include <memory>
+#include <stdexcept>
 #include <string>
+#include <vector>
 
 namespace {
 
@@ -67,7 +71,39 @@ Sample render(const ray::Scene& scene) {
 }  // namespace
 
 int main() {
-    const Sample sample = render(makeDenseScene());
-    std::cout << sample.checksum << '\n';
+    const ray::Scene scene = makeDenseScene();
+    (void)render(scene);
+
+    std::vector<Sample> samples;
+    for (int iteration = 0; iteration < 5; ++iteration) {
+        samples.push_back(render(scene));
+    }
+    std::sort(samples.begin(),
+              samples.end(),
+              [](const Sample& left, const Sample& right) {
+                  return left.milliseconds < right.milliseconds;
+              });
+    const Sample& median = samples[samples.size() / 2];
+    for (const Sample& sample : samples) {
+        if (sample.checksum != median.checksum ||
+            sample.stats.primitiveTests != median.stats.primitiveTests) {
+            throw std::runtime_error(
+                "benchmark runs produced different results");
+        }
+    }
+
+    std::cout << std::fixed << std::setprecision(3)
+              << "{\n"
+              << "  \"scene\": \"dense-20x20\",\n"
+              << "  \"width\": 640,\n"
+              << "  \"height\": 360,\n"
+              << "  \"warmupRuns\": 1,\n"
+              << "  \"measuredRuns\": 5,\n"
+              << "  \"medianMilliseconds\": " << median.milliseconds << ",\n"
+              << "  \"primaryRays\": " << median.stats.primaryRays << ",\n"
+              << "  \"shadowRays\": " << median.stats.shadowRays << ",\n"
+              << "  \"primitiveTests\": " << median.stats.primitiveTests << ",\n"
+              << "  \"checksum\": \"" << median.checksum << "\"\n"
+              << "}\n";
     return 0;
 }
