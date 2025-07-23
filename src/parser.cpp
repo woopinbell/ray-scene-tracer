@@ -224,7 +224,7 @@ void requireNonzeroVector(const Vec3& value,
                           const std::string& source_name,
                           std::size_t line_number,
                           const std::string& field_name) {
-    if (value.isNearZero()) {
+    if (value.length() <= kEpsilon) {
         throw ParseError(source_name,
                          line_number,
                          field_name + " must not be the zero vector");
