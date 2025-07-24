@@ -29,7 +29,7 @@ void writePpm(const Image& image, const std::string& path) {
 }
 
 std::string checksumHex(const Image& image) {
-    std::uint64_t hash = 1469598103934665603ULL;
+    std::uint64_t hash = 14695981039346656037ULL;
     const auto mix = [&hash](unsigned char value) {
         hash ^= static_cast<std::uint64_t>(value);
         hash *= 1099511628211ULL;
