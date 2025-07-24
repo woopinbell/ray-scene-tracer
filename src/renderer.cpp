@@ -2,8 +2,28 @@
 
 #include <chrono>
 #include <cmath>
+#include <limits>
+#include <stdexcept>
 
 namespace ray {
+
+namespace {
+
+std::size_t pixelStorageSize(int width, int height) {
+    if (width <= 0 || height <= 0) {
+        throw std::invalid_argument("image dimensions must be positive");
+    }
+    const std::size_t safe_width = static_cast<std::size_t>(width);
+    const std::size_t safe_height = static_cast<std::size_t>(height);
+    const std::size_t limit = std::numeric_limits<std::size_t>::max();
+    if (safe_width > limit / safe_height ||
+        safe_width * safe_height > limit / 3) {
+        throw std::overflow_error("image dimensions are too large");
+    }
+    return safe_width * safe_height * 3;
+}
+
+}  // namespace
 
 RenderSettings::RenderSettings()
     : samplesPerPixel(1),
@@ -16,7 +36,7 @@ Image::Image() : width(0), height(0), pixels() {}
 Image::Image(int width_value, int height_value)
     : width(width_value),
       height(height_value),
-      pixels(static_cast<std::size_t>(width_value * height_value * 3), 0) {}
+      pixels(pixelStorageSize(width_value, height_value), 0) {}
 
 Image renderScene(const Scene& scene,
                   const RenderSettings& settings,
