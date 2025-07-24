@@ -18,5 +18,11 @@ Ray makeCameraRay(const Camera& camera,
                   int height,
                   double pixel_x,
                   double pixel_y);
+Ray makeCameraRay(const Camera& camera,
+                  const CameraFrame& frame,
+                  int width,
+                  int height,
+                  double pixel_x,
+                  double pixel_y);
 
 }  // namespace ray
