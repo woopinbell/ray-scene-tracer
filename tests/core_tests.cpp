@@ -121,6 +121,32 @@ void testOutput() {
     require(ppm == "P3\n2 1\n255\n255 0 16\n0 127 255\n", "PPM encoding");
 }
 
+void testImageDimensions() {
+    const ray::Image image(2, 3);
+    require(image.width == 2 &&
+                image.height == 3 &&
+                image.pixels.size() == 18,
+            "image storage size");
+
+    bool zero_rejected = false;
+    try {
+        (void)ray::Image(0, 1);
+    } catch (const std::invalid_argument&) {
+        zero_rejected = true;
+    }
+    require(zero_rejected,
+            "zero image dimension rejection");
+
+    bool negative_rejected = false;
+    try {
+        (void)ray::Image(-1, 1);
+    } catch (const std::invalid_argument&) {
+        negative_rejected = true;
+    }
+    require(negative_rejected,
+            "negative image dimension rejection");
+}
+
 void testRenderGolden() {
     const ray::Scene scene = ray::loadScene(
         std::string(RAY_SOURCE_DIR) + "/scenes/basic.rt");
@@ -136,6 +162,7 @@ int main() {
         testGeometry();
         testInvalidFixture();
         testNearZeroDirections();
+        testImageDimensions();
         testOutput();
         testRenderGolden();
     } catch (const std::exception& error) {
