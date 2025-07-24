@@ -52,11 +52,15 @@ public:
     Color background;
     Camera camera;
     std::vector<Light> lights;
-    std::vector<std::shared_ptr<Shape>> shapes;
+    std::vector<std::unique_ptr<Shape>> shapes;
 
     Scene();
+    Scene(const Scene&) = delete;
+    Scene& operator=(const Scene&) = delete;
+    Scene(Scene&&) noexcept = default;
+    Scene& operator=(Scene&&) noexcept = default;
 
-    void addShape(const std::shared_ptr<Shape>& shape);
+    void addShape(std::unique_ptr<Shape> shape);
     void addLight(const Light& light);
     bool intersect(const Ray& ray,
                    double t_min,

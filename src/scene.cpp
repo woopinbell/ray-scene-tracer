@@ -43,9 +43,9 @@ Scene::Scene()
       lights(),
       shapes() {}
 
-void Scene::addShape(const std::shared_ptr<Shape>& shape) {
+void Scene::addShape(std::unique_ptr<Shape> shape) {
     if (shape) {
-        shapes.push_back(shape);
+        shapes.push_back(std::move(shape));
     }
 }
 
@@ -62,7 +62,7 @@ bool Scene::intersect(const Ray& ray,
     double closest = t_max;
     HitRecord candidate;
 
-    for (const std::shared_ptr<Shape>& shape : shapes) {
+    for (const std::unique_ptr<Shape>& shape : shapes) {
         if (!shape) {
             continue;
         }

@@ -392,7 +392,7 @@ Scene parseScene(std::istream& input, const std::string& source_name) {
                            source_name,
                            line_number,
                            "sphere color"));
-            scene.addShape(std::make_shared<Sphere>(
+            scene.addShape(std::make_unique<Sphere>(
                 center,
                 diameter * 0.5,
                 material));
@@ -422,7 +422,7 @@ Scene parseScene(std::istream& input, const std::string& source_name) {
                            line_number,
                            "plane color"));
             scene.addShape(
-                std::make_shared<Plane>(point, normal, material));
+                std::make_unique<Plane>(point, normal, material));
         } else if (id == "cy") {
             expectCount(tokens,
                         6,
@@ -458,7 +458,7 @@ Scene parseScene(std::istream& input, const std::string& source_name) {
                            source_name,
                            line_number,
                            "cylinder color"));
-            scene.addShape(std::make_shared<Cylinder>(
+            scene.addShape(std::make_unique<Cylinder>(
                 center,
                 axis,
                 diameter * 0.5,
