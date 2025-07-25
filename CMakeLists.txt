@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_library(raycore
+    src/accel.cpp
     src/camera.cpp
     src/geometry.cpp
     src/math.cpp
