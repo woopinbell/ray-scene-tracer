@@ -1,7 +1,9 @@
 #pragma once
 
+#include "ray/accel.hpp"
 #include "ray/material.hpp"
 
+#include <optional>
 #include <string>
 
 namespace ray {
@@ -30,6 +32,9 @@ public:
                            double t_min,
                            double t_max,
                            HitRecord& hit) const = 0;
+    virtual std::optional<Aabb> bounds() const {
+        return std::nullopt;
+    }
     virtual std::string typeName() const = 0;
 
 protected:
@@ -49,6 +54,7 @@ public:
                    double t_min,
                    double t_max,
                    HitRecord& hit) const override;
+    std::optional<Aabb> bounds() const override;
     std::string typeName() const override;
 };
 
@@ -65,6 +71,7 @@ public:
                    double t_min,
                    double t_max,
                    HitRecord& hit) const override;
+    std::optional<Aabb> bounds() const override;
     std::string typeName() const override;
 };
 
