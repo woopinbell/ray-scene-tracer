@@ -122,6 +122,20 @@ void testOutput() {
     require(ray::checksumHex(image) == "0fde7b4d509f1daf", "checksum golden");
 }
 
+void testCameraFrameReuse() {
+    const ray::Camera camera(ray::Vec3(1.0, 2.0, -3.0),
+                             ray::Vec3(-0.1, 0.25, 1.0),
+                             57.0);
+    const ray::CameraFrame frame = ray::buildCameraFrame(camera, 640, 360);
+    const ray::Ray rebuilt =
+        ray::makeCameraRay(camera, 640, 360, 217.5, 103.5);
+    const ray::Ray reused =
+        ray::makeCameraRay(camera, frame, 640, 360, 217.5, 103.5);
+    require(rebuilt.origin == reused.origin &&
+                rebuilt.direction == reused.direction,
+            "cached camera frame");
+}
+
 void testImageDimensions() {
     const ray::Image image(2, 3);
     require(image.width == 2 &&
@@ -165,6 +179,7 @@ int main() {
         testInvalidFixture();
         testNearZeroDirections();
         testImageDimensions();
+        testCameraFrameReuse();
         testOutput();
         testRenderGolden();
     } catch (const std::exception& error) {
