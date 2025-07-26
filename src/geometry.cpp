@@ -1,6 +1,8 @@
 #include "ray/geometry.hpp"
 
+#include <algorithm>
 #include <cmath>
+#include <limits>
 #include <utility>
 
 namespace ray {
@@ -266,6 +268,40 @@ bool Cylinder::intersect(const Ray& ray,
 
 std::string Cylinder::typeName() const {
     return "cylinder";
+}
+
+std::optional<Aabb> Cylinder::bounds() const {
+    const double half_height = height * 0.5;
+    const auto extent_for = [this, half_height](double axis_component) {
+        const double absolute_axis = std::fabs(axis_component);
+        const double radial =
+            std::sqrt(std::max(0.0, 1.0 - axis_component * axis_component));
+        const double side_extent =
+            absolute_axis * (half_height + kEpsilon) + radius * radial;
+        const double cap_extent =
+            absolute_axis * half_height +
+            std::sqrt(radius * radius + kEpsilon) * radial;
+        return std::max(side_extent, cap_extent);
+    };
+
+    const Vec3 extent(extent_for(axis.x),
+                      extent_for(axis.y),
+                      extent_for(axis.z));
+    Vec3 minimum = center - extent;
+    Vec3 maximum = center + extent;
+    minimum.x = std::nextafter(
+        minimum.x, -std::numeric_limits<double>::infinity());
+    minimum.y = std::nextafter(
+        minimum.y, -std::numeric_limits<double>::infinity());
+    minimum.z = std::nextafter(
+        minimum.z, -std::numeric_limits<double>::infinity());
+    maximum.x = std::nextafter(
+        maximum.x, std::numeric_limits<double>::infinity());
+    maximum.y = std::nextafter(
+        maximum.y, std::numeric_limits<double>::infinity());
+    maximum.z = std::nextafter(
+        maximum.z, std::numeric_limits<double>::infinity());
+    return Aabb(minimum, maximum);
 }
 
 }  // namespace ray
