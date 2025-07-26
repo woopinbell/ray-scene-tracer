@@ -79,6 +79,62 @@ void testInvalidFixture() {
     require(rejected, "invalid scene fixture");
 }
 
+void testBounds() {
+    const ray::Aabb box(ray::Vec3(-1.0, -1.0, -1.0),
+                        ray::Vec3(1.0, 1.0, 1.0));
+    double entry = 0.0;
+    require(box.intersect(ray::Ray(ray::Vec3(0.0, 0.0, -3.0),
+                                   ray::Vec3(0.0, 0.0, 1.0)),
+                          0.0,
+                          100.0,
+                          &entry) &&
+                nearlyEqual(entry, 2.0),
+            "AABB forward hit");
+    require(box.intersect(ray::Ray(ray::Vec3(0.0, 0.0, 3.0),
+                                   ray::Vec3(0.0, 0.0, -1.0)),
+                          0.0,
+                          100.0),
+            "AABB negative direction");
+    require(box.intersect(ray::Ray(ray::Vec3(1.0, 0.0, -3.0),
+                                   ray::Vec3(0.0, 0.0, 1.0)),
+                          0.0,
+                          100.0),
+            "AABB boundary hit");
+    require(!box.intersect(ray::Ray(ray::Vec3(2.0, 0.0, -3.0),
+                                    ray::Vec3(0.0, 0.0, 1.0)),
+                           0.0,
+                           100.0),
+            "AABB parallel miss");
+
+    const ray::Material white(ray::Color(1.0, 1.0, 1.0));
+    const ray::Sphere sphere(ray::Vec3(1.0, 2.0, 3.0), 2.0, white);
+    const std::optional<ray::Aabb> sphere_bounds = sphere.bounds();
+    require(sphere_bounds &&
+                sphere_bounds->minimum == ray::Vec3(-1.0, 0.0, 1.0) &&
+                sphere_bounds->maximum == ray::Vec3(3.0, 4.0, 5.0),
+            "sphere bounds");
+
+    const ray::Plane plane(ray::Vec3(),
+                           ray::Vec3(0.0, 1.0, 0.0),
+                           white);
+    require(!plane.bounds(), "plane remains unbounded");
+
+    const ray::Cylinder cylinder(ray::Vec3(),
+                                 ray::Vec3(1.0, 1.0, 0.0),
+                                 1.0,
+                                 4.0,
+                                 white);
+    const std::optional<ray::Aabb> cylinder_bounds = cylinder.bounds();
+    const double exact_xy = 3.0 / std::sqrt(2.0);
+    require(cylinder_bounds &&
+                cylinder_bounds->maximum.x >= exact_xy &&
+                cylinder_bounds->maximum.y >= exact_xy &&
+                cylinder_bounds->maximum.x < exact_xy + 1.0e-3 &&
+                cylinder_bounds->maximum.z >= 1.0 &&
+                cylinder_bounds->maximum.z < 1.0 + 1.0e-3,
+            "arbitrary-axis cylinder bounds");
+}
+
 void testNearZeroDirections() {
     const std::string prefix =
         "R 8 8\n"
@@ -176,6 +232,7 @@ int main() {
     try {
         testMath();
         testGeometry();
+        testBounds();
         testInvalidFixture();
         testNearZeroDirections();
         testImageDimensions();
