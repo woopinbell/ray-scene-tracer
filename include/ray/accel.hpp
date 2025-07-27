@@ -41,6 +41,7 @@ struct BvhNode {
 
 class Bvh {
 public:
+    void build(std::vector<BvhPrimitive> primitives);
     void clear();
     bool empty() const;
 
@@ -48,6 +49,10 @@ public:
     const std::vector<std::uint32_t>& primitiveIndices() const;
 
 private:
+    std::uint32_t buildNode(std::vector<BvhPrimitive>& primitives,
+                            std::uint32_t first,
+                            std::uint32_t last);
+
     std::vector<BvhNode> nodes_;
     std::vector<std::uint32_t> primitiveIndices_;
 };

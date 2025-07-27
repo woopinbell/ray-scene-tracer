@@ -96,6 +96,21 @@ bool BvhNode::isLeaf() const {
     return count > 0;
 }
 
+void Bvh::build(std::vector<BvhPrimitive> primitives) {
+    clear();
+    if (primitives.empty()) {
+        return;
+    }
+    nodes_.reserve(primitives.size() * 2);
+    (void)buildNode(primitives,
+                    0,
+                    static_cast<std::uint32_t>(primitives.size()));
+    primitiveIndices_.reserve(primitives.size());
+    for (const BvhPrimitive& primitive : primitives) {
+        primitiveIndices_.push_back(primitive.shapeIndex);
+    }
+}
+
 void Bvh::clear() {
     nodes_.clear();
     primitiveIndices_.clear();
@@ -111,6 +126,63 @@ const std::vector<BvhNode>& Bvh::nodes() const {
 
 const std::vector<std::uint32_t>& Bvh::primitiveIndices() const {
     return primitiveIndices_;
+}
+
+std::uint32_t Bvh::buildNode(std::vector<BvhPrimitive>& primitives,
+                             std::uint32_t first,
+                             std::uint32_t last) {
+    Aabb node_bounds = primitives[first].bounds;
+    Vec3 centroid_min = primitives[first].bounds.centroid();
+    Vec3 centroid_max = centroid_min;
+    for (std::uint32_t index = first + 1; index < last; ++index) {
+        node_bounds = surroundingBox(node_bounds, primitives[index].bounds);
+        const Vec3 centroid = primitives[index].bounds.centroid();
+        centroid_min.x = std::min(centroid_min.x, centroid.x);
+        centroid_min.y = std::min(centroid_min.y, centroid.y);
+        centroid_min.z = std::min(centroid_min.z, centroid.z);
+        centroid_max.x = std::max(centroid_max.x, centroid.x);
+        centroid_max.y = std::max(centroid_max.y, centroid.y);
+        centroid_max.z = std::max(centroid_max.z, centroid.z);
+    }
+
+    const std::uint32_t node_index =
+        static_cast<std::uint32_t>(nodes_.size());
+    nodes_.push_back(BvhNode());
+    nodes_[node_index].bounds = node_bounds;
+
+    const std::uint32_t count = last - first;
+    if (count <= 4) {
+        nodes_[node_index].first = first;
+        nodes_[node_index].count = count;
+        return node_index;
+    }
+
+    const Vec3 extent = centroid_max - centroid_min;
+    int axis = 0;
+    if (extent.y > extent.x) {
+        axis = 1;
+    }
+    if (component(extent, 2) > component(extent, axis)) {
+        axis = 2;
+    }
+    std::stable_sort(
+        primitives.begin() + first,
+        primitives.begin() + last,
+        [axis](const BvhPrimitive& left, const BvhPrimitive& right) {
+            const double left_value = component(left.bounds.centroid(), axis);
+            const double right_value = component(right.bounds.centroid(), axis);
+            if (left_value != right_value) {
+                return left_value < right_value;
+            }
+            return left.shapeIndex < right.shapeIndex;
+        });
+
+    const std::uint32_t middle = first + count / 2;
+    const std::uint32_t left = buildNode(primitives, first, middle);
+    const std::uint32_t right = buildNode(primitives, middle, last);
+    nodes_[node_index].left = left;
+    nodes_[node_index].right = right;
+    return node_index;
 }
 
 }  // namespace ray
