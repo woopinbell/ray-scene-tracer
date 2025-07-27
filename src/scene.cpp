@@ -1,5 +1,6 @@
 #include "ray/scene.hpp"
 
+#include <limits>
 #include <optional>
 #include <utility>
 
@@ -97,7 +98,6 @@ bool Scene::intersect(const Ray& ray,
                       HitRecord& hit,
                       AccelMode mode,
                       RenderStats* stats) const {
-    (void)mode;
     bool found = false;
     double closest = t_max;
     std::uint32_t best_index = 0;
@@ -126,8 +126,83 @@ bool Scene::intersect(const Ray& ray,
             }
         };
 
-    for (std::size_t index = 0; index < shapes.size(); ++index) {
-        test_shape(static_cast<std::uint32_t>(index));
+    if (mode == AccelMode::Linear || !accelerationReady_) {
+        for (std::size_t index = 0; index < shapes.size(); ++index) {
+            test_shape(static_cast<std::uint32_t>(index));
+        }
+        return found;
+    }
+
+    struct StackEntry {
+        std::uint32_t node;
+        double entry;
+    };
+    std::vector<StackEntry> stack;
+    const std::vector<BvhNode>& nodes = bvh_.nodes();
+    const std::vector<std::uint32_t>& indices =
+        bvh_.primitiveIndices();
+    if (!nodes.empty()) {
+        double root_entry = t_min;
+        if (stats) {
+            ++stats->aabbTests;
+        }
+        if (nodes[0].bounds.intersect(
+                ray, t_min, closest, &root_entry)) {
+            stack.push_back(StackEntry{0, root_entry});
+        }
+    }
+
+    while (!stack.empty()) {
+        const StackEntry current = stack.back();
+        stack.pop_back();
+        if (current.entry > closest) {
+            continue;
+        }
+
+        const BvhNode& node = nodes[current.node];
+        if (node.isLeaf()) {
+            for (std::uint32_t offset = 0;
+                 offset < node.count;
+                 ++offset) {
+                test_shape(indices[node.first + offset]);
+            }
+            continue;
+        }
+
+        double left_entry = t_min;
+        double right_entry = t_min;
+        if (stats) {
+            stats->aabbTests += 2;
+        }
+        const bool hit_left = nodes[node.left].bounds.intersect(
+            ray, t_min, closest, &left_entry);
+        const bool hit_right = nodes[node.right].bounds.intersect(
+            ray, t_min, closest, &right_entry);
+
+        if (hit_left && hit_right) {
+            const bool left_first =
+                left_entry < right_entry ||
+                (left_entry == right_entry &&
+                 node.left < node.right);
+            const StackEntry near_entry =
+                left_first
+                    ? StackEntry{node.left, left_entry}
+                    : StackEntry{node.right, right_entry};
+            const StackEntry far_entry =
+                left_first
+                    ? StackEntry{node.right, right_entry}
+                    : StackEntry{node.left, left_entry};
+            stack.push_back(far_entry);
+            stack.push_back(near_entry);
+        } else if (hit_left) {
+            stack.push_back(StackEntry{node.left, left_entry});
+        } else if (hit_right) {
+            stack.push_back(StackEntry{node.right, right_entry});
+        }
+    }
+
+    for (std::uint32_t index : unboundedIndices_) {
+        test_shape(index);
     }
     return found;
 }
