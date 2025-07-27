@@ -7,6 +7,11 @@
 
 namespace ray {
 
+enum class AccelMode {
+    Linear,
+    Bvh
+};
+
 struct Aabb {
     Vec3 minimum;
     Vec3 maximum;

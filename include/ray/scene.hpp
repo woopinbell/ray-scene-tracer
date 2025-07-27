@@ -66,6 +66,7 @@ public:
                    double t_min,
                    double t_max,
                    HitRecord& hit,
+                   AccelMode mode = AccelMode::Bvh,
                    RenderStats* stats = nullptr) const;
 };
 
