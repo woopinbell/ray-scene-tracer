@@ -6,9 +6,12 @@
 
 namespace ray {
 
-Material::Material() : albedo(1.0, 1.0, 1.0) {}
+Material::Material()
+    : albedo(1.0, 1.0, 1.0),
+      type(MaterialType::Diffuse) {}
 
-Material::Material(const Color& color) : albedo(color) {}
+Material::Material(const Color& color, MaterialType type_value)
+    : albedo(color), type(type_value) {}
 
 Light::Light()
     : position(), brightness(1.0), color(1.0, 1.0, 1.0) {}
