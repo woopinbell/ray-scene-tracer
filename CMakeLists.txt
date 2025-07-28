@@ -41,6 +41,11 @@ if(BUILD_TESTING)
     )
 
     add_test(NAME core_regression COMMAND ray-core-tests)
+
+    add_executable(ray-accel-tests tests/accel_tests.cpp)
+    target_link_libraries(ray-accel-tests PRIVATE raycore)
+    add_test(NAME accel_regression COMMAND ray-accel-tests)
+
     add_test(
         NAME render_smoke
         COMMAND bash
