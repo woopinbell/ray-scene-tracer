@@ -52,6 +52,7 @@ ray::Scene makeDenseScene() {
                 ray::Material(color)));
         }
     }
+    scene.buildAcceleration();
     return scene;
 }
 
@@ -61,35 +62,66 @@ struct Sample {
     std::string checksum;
 };
 
-Sample render(const ray::Scene& scene) {
+Sample render(const ray::Scene& scene, ray::AccelMode mode) {
     ray::RenderStats stats;
-    const ray::Image image =
-        ray::renderScene(scene, ray::RenderSettings(), &stats);
+    ray::RenderSettings settings;
+    settings.accelMode = mode;
+    const ray::Image image = ray::renderScene(scene, settings, &stats);
     return Sample{stats.renderMilliseconds, stats, ray::checksumHex(image)};
 }
 
-}  // namespace
-
-int main() {
-    const ray::Scene scene = makeDenseScene();
-    (void)render(scene);
+Sample measure(const ray::Scene& scene, ray::AccelMode mode) {
+    (void)render(scene, mode);
 
     std::vector<Sample> samples;
     for (int iteration = 0; iteration < 5; ++iteration) {
-        samples.push_back(render(scene));
+        samples.push_back(render(scene, mode));
     }
     std::sort(samples.begin(),
               samples.end(),
               [](const Sample& left, const Sample& right) {
                   return left.milliseconds < right.milliseconds;
               });
-    const Sample& median = samples[samples.size() / 2];
+    const Sample median = samples[samples.size() / 2];
     for (const Sample& sample : samples) {
         if (sample.checksum != median.checksum ||
-            sample.stats.primitiveTests != median.stats.primitiveTests) {
+            sample.stats.primitiveTests != median.stats.primitiveTests ||
+            sample.stats.aabbTests != median.stats.aabbTests) {
             throw std::runtime_error(
                 "benchmark runs produced different results");
         }
+    }
+    return median;
+}
+
+void printResult(const std::string& name,
+                 const Sample& sample,
+                 bool trailing_comma) {
+    std::cout << "    \"" << name << "\": {\n"
+              << "      \"medianMilliseconds\": "
+              << sample.milliseconds << ",\n"
+              << "      \"primaryRays\": "
+              << sample.stats.primaryRays << ",\n"
+              << "      \"shadowRays\": "
+              << sample.stats.shadowRays << ",\n"
+              << "      \"aabbTests\": "
+              << sample.stats.aabbTests << ",\n"
+              << "      \"primitiveTests\": "
+              << sample.stats.primitiveTests << ",\n"
+              << "      \"checksum\": \""
+              << sample.checksum << "\"\n"
+              << "    }" << (trailing_comma ? "," : "") << "\n";
+}
+
+}  // namespace
+
+int main() {
+    const ray::Scene scene = makeDenseScene();
+    const Sample linear = measure(scene, ray::AccelMode::Linear);
+    const Sample bvh = measure(scene, ray::AccelMode::Bvh);
+    if (linear.checksum != bvh.checksum) {
+        throw std::runtime_error(
+            "linear and BVH renders produced different images");
     }
 
     std::cout << std::fixed << std::setprecision(3)
@@ -99,11 +131,10 @@ int main() {
               << "  \"height\": 360,\n"
               << "  \"warmupRuns\": 1,\n"
               << "  \"measuredRuns\": 5,\n"
-              << "  \"medianMilliseconds\": " << median.milliseconds << ",\n"
-              << "  \"primaryRays\": " << median.stats.primaryRays << ",\n"
-              << "  \"shadowRays\": " << median.stats.shadowRays << ",\n"
-              << "  \"primitiveTests\": " << median.stats.primitiveTests << ",\n"
-              << "  \"checksum\": \"" << median.checksum << "\"\n"
+              << "  \"results\": {\n";
+    printResult("linear", linear, true);
+    printResult("bvh", bvh, false);
+    std::cout << "  }\n"
               << "}\n";
     return 0;
 }
