@@ -78,6 +78,21 @@ void expectCount(const std::vector<std::string>& tokens,
     }
 }
 
+void expectCountEither(const std::vector<std::string>& tokens,
+                       std::size_t first,
+                       std::size_t second,
+                       const std::string& source_name,
+                       std::size_t line_number,
+                       const std::string& form) {
+    if (tokens.size() != first && tokens.size() != second) {
+        std::ostringstream message;
+        message << "expected " << form << " with "
+                << first - 1 << " or " << second - 1
+                << " argument(s), got " << tokens.size() - 1;
+        throw ParseError(source_name, line_number, message.str());
+    }
+}
+
 double parseDoubleToken(const std::string& token,
                         const std::string& source_name,
                         std::size_t line_number,
@@ -207,6 +222,25 @@ Color parseColor(const std::string& token,
     return Color(static_cast<double>(channels[0]) / 255.0,
                  static_cast<double>(channels[1]) / 255.0,
                  static_cast<double>(channels[2]) / 255.0);
+}
+
+MaterialType parseMaterialType(const std::vector<std::string>& tokens,
+                               std::size_t base_count,
+                               const std::string& source_name,
+                               std::size_t line_number) {
+    if (tokens.size() == base_count) {
+        return MaterialType::Diffuse;
+    }
+    const std::string& token = tokens.back();
+    if (token == "diffuse") {
+        return MaterialType::Diffuse;
+    }
+    if (token == "metal") {
+        return MaterialType::Metal;
+    }
+    throw ParseError(source_name,
+                     line_number,
+                     "unknown material '" + token + "'");
 }
 
 void rejectDuplicate(bool already_seen,
@@ -372,11 +406,12 @@ Scene parseScene(std::istream& input, const std::string& source_name) {
                            "light color");
             scene.addLight(Light(position, brightness, color));
         } else if (id == "sp") {
-            expectCount(tokens,
-                        4,
-                        source_name,
-                        line_number,
-                        "sp center diameter r,g,b");
+            expectCountEither(tokens,
+                              4,
+                              5,
+                              source_name,
+                              line_number,
+                              "sp center diameter r,g,b [material]");
             const Vec3 center =
                 parseVec3(tokens[1],
                           source_name,
@@ -391,17 +426,20 @@ Scene parseScene(std::istream& input, const std::string& source_name) {
                 parseColor(tokens[3],
                            source_name,
                            line_number,
-                           "sphere color"));
+                           "sphere color"),
+                parseMaterialType(
+                    tokens, 4, source_name, line_number));
             scene.addShape(std::make_unique<Sphere>(
                 center,
                 diameter * 0.5,
                 material));
         } else if (id == "pl") {
-            expectCount(tokens,
-                        4,
-                        source_name,
-                        line_number,
-                        "pl point normal r,g,b");
+            expectCountEither(tokens,
+                              4,
+                              5,
+                              source_name,
+                              line_number,
+                              "pl point normal r,g,b [material]");
             const Vec3 point =
                 parseVec3(tokens[1],
                           source_name,
@@ -420,15 +458,19 @@ Scene parseScene(std::istream& input, const std::string& source_name) {
                 parseColor(tokens[3],
                            source_name,
                            line_number,
-                           "plane color"));
+                           "plane color"),
+                parseMaterialType(
+                    tokens, 4, source_name, line_number));
             scene.addShape(
                 std::make_unique<Plane>(point, normal, material));
         } else if (id == "cy") {
-            expectCount(tokens,
-                        6,
-                        source_name,
-                        line_number,
-                        "cy center axis diameter height r,g,b");
+            expectCountEither(
+                tokens,
+                6,
+                7,
+                source_name,
+                line_number,
+                "cy center axis diameter height r,g,b [material]");
             const Vec3 center =
                 parseVec3(tokens[1],
                           source_name,
@@ -457,7 +499,9 @@ Scene parseScene(std::istream& input, const std::string& source_name) {
                 parseColor(tokens[5],
                            source_name,
                            line_number,
-                           "cylinder color"));
+                           "cylinder color"),
+                parseMaterialType(
+                    tokens, 6, source_name, line_number));
             scene.addShape(std::make_unique<Cylinder>(
                 center,
                 axis,
