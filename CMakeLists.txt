@@ -46,6 +46,14 @@ if(BUILD_TESTING)
     target_link_libraries(ray-accel-tests PRIVATE raycore)
     add_test(NAME accel_regression COMMAND ray-accel-tests)
 
+    add_executable(ray-material-tests tests/material_tests.cpp)
+    target_link_libraries(ray-material-tests PRIVATE raycore)
+    target_compile_definitions(
+        ray-material-tests
+        PRIVATE RAY_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+    )
+    add_test(NAME material_regression COMMAND ray-material-tests)
+
     add_test(
         NAME render_smoke
         COMMAND bash
