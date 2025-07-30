@@ -34,7 +34,8 @@ RenderSettings::RenderSettings()
       maxDepth(1),
       tMin(kRayTMin),
       tMax(std::numeric_limits<double>::infinity()),
-      accelMode(AccelMode::Bvh) {}
+      accelMode(AccelMode::Bvh),
+      threadCount(0) {}
 
 Image::Image() : width(0), height(0), pixels() {}
 
@@ -59,9 +60,12 @@ Image renderScene(const Scene& scene,
         (static_cast<std::size_t>(scene.height) + kTileSize - 1) /
         kTileSize;
     const std::size_t tile_count = tiles_x * tiles_y;
-    unsigned int worker_count = std::thread::hardware_concurrency();
+    unsigned int worker_count = settings.threadCount;
     if (worker_count == 0) {
-        worker_count = 1;
+        worker_count = std::thread::hardware_concurrency();
+        if (worker_count == 0) {
+            worker_count = 1;
+        }
     }
     worker_count = static_cast<unsigned int>(
         std::min<std::size_t>(worker_count, tile_count));

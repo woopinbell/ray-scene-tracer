@@ -66,6 +66,7 @@ Sample render(const ray::Scene& scene, ray::AccelMode mode) {
     ray::RenderStats stats;
     ray::RenderSettings settings;
     settings.accelMode = mode;
+    settings.threadCount = 1;
     const ray::Image image = ray::renderScene(scene, settings, &stats);
     return Sample{stats.renderMilliseconds, stats, ray::checksumHex(image)};
 }

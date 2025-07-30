@@ -13,6 +13,7 @@ struct RenderSettings {
     double tMin;
     double tMax;
     AccelMode accelMode;
+    unsigned int threadCount;
 
     RenderSettings();
 };
