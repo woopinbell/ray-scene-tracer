@@ -1,7 +1,10 @@
 #include "ray.hpp"
 
+#include <algorithm>
+#include <cctype>
 #include <exception>
 #include <iostream>
+#include <limits>
 #include <string>
 
 namespace {
@@ -17,7 +20,34 @@ void printUsage() {
     std::cerr
         << "usage: ray-scene-tracer <scene.rt> <output.ppm>"
         << " [--checksum]"
-        << " [--accel linear|bvh]\n";
+        << " [--accel linear|bvh]"
+        << " [--threads N|auto]\n";
+}
+
+bool parseUnsigned(const std::string& token,
+                   unsigned long long maximum,
+                   unsigned long long& value) {
+    if (token.empty() ||
+        !std::all_of(
+            token.begin(),
+            token.end(),
+            [](unsigned char character) {
+                return std::isdigit(character) != 0;
+            })) {
+        return false;
+    }
+    try {
+        std::size_t parsed = 0;
+        const unsigned long long candidate =
+            std::stoull(token, &parsed);
+        if (parsed != token.size() || candidate > maximum) {
+            return false;
+        }
+        value = candidate;
+        return true;
+    } catch (const std::exception&) {
+        return false;
+    }
 }
 
 bool parseCli(int argc, char** argv, CliOptions& options) {
@@ -29,6 +59,7 @@ bool parseCli(int argc, char** argv, CliOptions& options) {
 
     bool seen_checksum = false;
     bool seen_accel = false;
+    bool seen_threads = false;
 
     for (int index = 3; index < argc; ++index) {
         const std::string option = argv[index];
@@ -56,6 +87,29 @@ bool parseCli(int argc, char** argv, CliOptions& options) {
             } else {
                 return false;
             }
+            continue;
+        }
+
+        if (option == "--threads") {
+            if (seen_threads || index + 1 >= argc) {
+                return false;
+            }
+            seen_threads = true;
+            const std::string value = argv[++index];
+            if (value == "auto") {
+                options.renderSettings.threadCount = 0;
+                continue;
+            }
+            unsigned long long parsed = 0;
+            if (!parseUnsigned(
+                    value,
+                    std::numeric_limits<unsigned int>::max(),
+                    parsed) ||
+                parsed == 0) {
+                return false;
+            }
+            options.renderSettings.threadCount =
+                static_cast<unsigned int>(parsed);
             continue;
         }
         return false;
