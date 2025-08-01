@@ -21,7 +21,8 @@ void printUsage() {
         << "usage: ray-scene-tracer <scene.rt> <output.ppm>"
         << " [--checksum]"
         << " [--accel linear|bvh]"
-        << " [--threads N|auto]\n";
+        << " [--threads N|auto]"
+        << " [--max-depth 0..32]\n";
 }
 
 bool parseUnsigned(const std::string& token,
@@ -60,6 +61,7 @@ bool parseCli(int argc, char** argv, CliOptions& options) {
     bool seen_checksum = false;
     bool seen_accel = false;
     bool seen_threads = false;
+    bool seen_max_depth = false;
 
     for (int index = 3; index < argc; ++index) {
         const std::string option = argv[index];
@@ -110,6 +112,20 @@ bool parseCli(int argc, char** argv, CliOptions& options) {
             }
             options.renderSettings.threadCount =
                 static_cast<unsigned int>(parsed);
+            continue;
+        }
+
+        if (option == "--max-depth") {
+            if (seen_max_depth || index + 1 >= argc) {
+                return false;
+            }
+            seen_max_depth = true;
+            unsigned long long parsed = 0;
+            if (!parseUnsigned(argv[++index], 32, parsed)) {
+                return false;
+            }
+            options.renderSettings.maxDepth =
+                static_cast<int>(parsed);
             continue;
         }
         return false;
