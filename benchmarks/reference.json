@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "configuration": {
+    "scene": "dense-20x20",
+    "width": 640,
+    "height": 360,
+    "spheres": 400,
+    "planes": 1,
+    "lights": 2,
+    "threads": 1,
+    "maxDepth": 4,
+    "tileSize": 16,
+    "warmupRuns": 1,
+    "measuredRuns": 5
+  },
+  "environment": {
+    "buildType": "Release",
+    "compiler": "AppleClang 17.0.0",
+    "architecture": "arm64",
+    "logicalThreads": 8
+  },
+  "results": {
+    "linear": {
+      "medianMilliseconds": 2326.770,
+      "primaryRays": 230400,
+      "shadowRays": 283078,
+      "secondaryRays": 0,
+      "aabbTests": 0,
+      "primitiveTests": 205904678,
+      "checksum": "f3f4cf26aca94dc1"
+    },
+    "bvh": {
+      "medianMilliseconds": 87.001,
+      "primaryRays": 230400,
+      "shadowRays": 283078,
+      "secondaryRays": 0,
+      "aabbTests": 1696156,
+      "primitiveTests": 904630,
+      "checksum": "f3f4cf26aca94dc1"
+    },
+    "primitiveTestRatio": 0.004,
+    "medianSpeedup": 26.744
+  }
+}
