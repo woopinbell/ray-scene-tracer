@@ -44,6 +44,14 @@ Image::Image(int width_value, int height_value)
       height(height_value),
       pixels(pixelStorageSize(width_value, height_value), 0) {}
 
+void Image::validate() const {
+    const std::size_t expected = pixelStorageSize(width, height);
+    if (pixels.size() != expected) {
+        throw std::invalid_argument(
+            "image pixel storage does not match its dimensions");
+    }
+}
+
 Image renderScene(const Scene& scene,
                   const RenderSettings& settings,
                   RenderStats* stats) {
