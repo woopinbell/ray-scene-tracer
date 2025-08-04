@@ -4,6 +4,7 @@
 #include <atomic>
 #include <chrono>
 #include <cmath>
+#include <exception>
 #include <limits>
 #include <stdexcept>
 #include <thread>
@@ -84,6 +85,7 @@ Image renderScene(const Scene& scene,
     std::vector<WorkerStats> worker_stats(worker_count);
     std::atomic<std::size_t> next_tile{0};
     std::vector<std::thread> workers;
+    std::vector<std::exception_ptr> worker_errors(worker_count);
     workers.reserve(worker_count);
 
     struct ThreadJoiner {
@@ -108,60 +110,70 @@ Image renderScene(const Scene& scene,
 
     for (unsigned int worker = 0; worker < worker_count; ++worker) {
         workers.emplace_back([&, worker]() {
-            RenderStats& local = worker_stats[worker].values;
-            for (;;) {
-                const std::size_t tile =
-                    next_tile.fetch_add(1, std::memory_order_relaxed);
-                if (tile >= tile_count) {
-                    break;
-                }
-                const int start_x =
-                    static_cast<int>((tile % tiles_x) * kTileSize);
-                const int start_y =
-                    static_cast<int>((tile / tiles_x) * kTileSize);
-                const int end_x =
-                    std::min(start_x + kTileSize, scene.width);
-                const int end_y =
-                    std::min(start_y + kTileSize, scene.height);
+            try {
+                RenderStats& local = worker_stats[worker].values;
+                for (;;) {
+                    const std::size_t tile =
+                        next_tile.fetch_add(1, std::memory_order_relaxed);
+                    if (tile >= tile_count) {
+                        break;
+                    }
+                    const int start_x =
+                        static_cast<int>((tile % tiles_x) * kTileSize);
+                    const int start_y =
+                        static_cast<int>((tile / tiles_x) * kTileSize);
+                    const int end_x =
+                        std::min(start_x + kTileSize, scene.width);
+                    const int end_y =
+                        std::min(start_y + kTileSize, scene.height);
 
-                for (int y = start_y; y < end_y; ++y) {
-                    for (int x = start_x; x < end_x; ++x) {
-                        const Ray ray =
-                            makeCameraRay(scene.camera,
-                                          camera_frame,
-                                          scene.width,
-                                          scene.height,
-                                          x + 0.5,
-                                          y + 0.5);
-                        ++local.primaryRays;
-                        const Color color =
-                            traceRay(scene,
-                                     ray,
-                                     settings.maxDepth,
-                                     settings.accelMode,
-                                     &local);
-                        const Color clamped = clampColor(color);
-                        const std::size_t offset =
-                            (static_cast<std::size_t>(y) *
-                                 static_cast<std::size_t>(scene.width) +
-                             static_cast<std::size_t>(x)) *
-                            3;
-                        image.pixels[offset] =
-                            static_cast<unsigned char>(
-                                std::lround(clamped.x * 255.0));
-                        image.pixels[offset + 1] =
-                            static_cast<unsigned char>(
-                                std::lround(clamped.y * 255.0));
-                        image.pixels[offset + 2] =
-                            static_cast<unsigned char>(
-                                std::lround(clamped.z * 255.0));
+                    for (int y = start_y; y < end_y; ++y) {
+                        for (int x = start_x; x < end_x; ++x) {
+                            const Ray ray =
+                                makeCameraRay(scene.camera,
+                                              camera_frame,
+                                              scene.width,
+                                              scene.height,
+                                              x + 0.5,
+                                              y + 0.5);
+                            ++local.primaryRays;
+                            const Color color =
+                                traceRay(scene,
+                                         ray,
+                                         settings.maxDepth,
+                                         settings.accelMode,
+                                         &local);
+                            const Color clamped = clampColor(color);
+                            const std::size_t offset =
+                                (static_cast<std::size_t>(y) *
+                                     static_cast<std::size_t>(scene.width) +
+                                 static_cast<std::size_t>(x)) *
+                                3;
+                            image.pixels[offset] =
+                                static_cast<unsigned char>(
+                                    std::lround(clamped.x * 255.0));
+                            image.pixels[offset + 1] =
+                                static_cast<unsigned char>(
+                                    std::lround(clamped.y * 255.0));
+                            image.pixels[offset + 2] =
+                                static_cast<unsigned char>(
+                                    std::lround(clamped.z * 255.0));
+                        }
                     }
                 }
+            } catch (...) {
+                worker_errors[worker] = std::current_exception();
+                next_tile.store(tile_count, std::memory_order_relaxed);
             }
         });
     }
     for (std::thread& worker : workers) {
         worker.join();
+    }
+    for (const std::exception_ptr& error : worker_errors) {
+        if (error) {
+            std::rethrow_exception(error);
+        }
     }
 
     if (stats) {
