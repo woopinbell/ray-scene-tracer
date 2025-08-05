@@ -102,4 +102,19 @@ if(BUILD_TESTING)
                 ${CMAKE_CURRENT_SOURCE_DIR}/tests/render_smoke.sh
                 $<TARGET_FILE:ray-scene-tracer>
     )
+
+    set_tests_properties(
+        core_regression
+        accel_regression
+        material_regression
+        render_determinism
+        output_failure_regression
+        cli_contract
+        PROPERTIES TIMEOUT 60
+    )
+    set_tests_properties(
+        render_output_determinism
+        render_smoke
+        PROPERTIES TIMEOUT 120
+    )
 endif()
