@@ -2,6 +2,7 @@
 
 #include "ray/geometry.hpp"
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <vector>
@@ -52,7 +53,6 @@ public:
     Color background;
     Camera camera;
     std::vector<Light> lights;
-    std::vector<std::unique_ptr<Shape>> shapes;
 
     Scene();
     Scene(const Scene&) = delete;
@@ -61,6 +61,8 @@ public:
     Scene& operator=(Scene&&) noexcept = default;
 
     void addShape(std::unique_ptr<Shape> shape);
+    std::size_t shapeCount() const;
+    const Shape& shapeAt(std::size_t index) const;
     void addLight(const Light& light);
     void buildAcceleration();
     bool accelerationReady() const;
@@ -72,6 +74,7 @@ public:
                    RenderStats* stats = nullptr) const;
 
 private:
+    std::vector<std::unique_ptr<Shape>> shapes_;
     Bvh bvh_;
     std::vector<std::uint32_t> unboundedIndices_;
     bool accelerationReady_;

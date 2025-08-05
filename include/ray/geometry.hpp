@@ -41,29 +41,33 @@ protected:
 
 class Sphere : public Shape {
 public:
-    Vec3 center;
-    double radius;
-
     Sphere(const Vec3& center_value,
            double radius_value,
            const Material& material_value);
 
+    const Vec3& center() const;
+    double radius() const;
+
     bool intersect(const Ray& ray,
                    double t_min,
                    double t_max,
                    HitRecord& hit) const override;
     std::optional<Aabb> bounds() const override;
     std::string typeName() const override;
+
+private:
+    Vec3 center_;
+    double radius_;
 };
 
 class Plane : public Shape {
 public:
-    Vec3 point;
-    Vec3 normal;
-
     Plane(const Vec3& point_value,
           const Vec3& normal_value,
           const Material& material_value);
+
+    const Vec3& point() const;
+    const Vec3& normal() const;
 
     bool intersect(const Ray& ray,
                    double t_min,
@@ -71,27 +75,37 @@ public:
                    HitRecord& hit) const override;
     std::optional<Aabb> bounds() const override;
     std::string typeName() const override;
+
+private:
+    Vec3 point_;
+    Vec3 normal_;
 };
 
 class Cylinder : public Shape {
 public:
-    Vec3 center;
-    Vec3 axis;
-    double radius;
-    double height;
-
     Cylinder(const Vec3& center_value,
              const Vec3& axis_value,
              double radius_value,
              double height_value,
              const Material& material_value);
 
+    const Vec3& center() const;
+    const Vec3& axis() const;
+    double radius() const;
+    double height() const;
+
     bool intersect(const Ray& ray,
                    double t_min,
                    double t_max,
                    HitRecord& hit) const override;
     std::optional<Aabb> bounds() const override;
     std::string typeName() const override;
+
+private:
+    Vec3 center_;
+    Vec3 axis_;
+    double radius_;
+    double height_;
 };
 
 }  // namespace ray
