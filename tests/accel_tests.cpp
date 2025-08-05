@@ -5,6 +5,8 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
+#include <utility>
 
 namespace {
 
@@ -17,6 +19,38 @@ void require(bool condition, const std::string& message) {
 bool nearlyEqual(double left, double right, double epsilon = 1.0e-9) {
     return std::fabs(left - right) <= epsilon;
 }
+
+template <typename T, typename = void>
+struct ExposesShapeStorage : std::false_type {};
+
+template <typename T>
+struct ExposesShapeStorage<
+    T,
+    std::void_t<decltype(std::declval<T&>().shapes)>>
+    : std::true_type {};
+
+static_assert(!ExposesShapeStorage<ray::Scene>::value,
+              "Scene must not expose mutable shape storage");
+static_assert(
+    std::is_same<
+        decltype(std::declval<ray::Scene&>().shapeAt(0)),
+        const ray::Shape&>::value,
+    "Scene shape access must be read-only");
+static_assert(
+    !std::is_assignable<
+        decltype(std::declval<ray::Sphere&>().center()),
+        ray::Vec3>::value,
+    "sphere geometry must be read-only");
+static_assert(
+    !std::is_assignable<
+        decltype(std::declval<ray::Plane&>().normal()),
+        ray::Vec3>::value,
+    "plane geometry must be read-only");
+static_assert(
+    !std::is_assignable<
+        decltype(std::declval<ray::Cylinder&>().axis()),
+        ray::Vec3>::value,
+    "cylinder geometry must be read-only");
 
 void requireEquivalentHit(ray::Scene& scene,
                           const ray::Ray& ray_value,
@@ -135,6 +169,48 @@ void testEqualDistanceTie() {
             "later primitive wins equal-distance tie");
 }
 
+void testShapeMutationBoundary() {
+    ray::Scene scene;
+    scene.addShape(std::make_unique<ray::Sphere>(
+        ray::Vec3(10.0, 0.0, 5.0),
+        1.0,
+        ray::Material(ray::Color(1.0, 0.0, 0.0))));
+    scene.buildAcceleration();
+    require(scene.accelerationReady(),
+            "initial acceleration state");
+
+    scene.addShape(std::make_unique<ray::Sphere>(
+        ray::Vec3(0.0, 0.0, 5.0),
+        1.0,
+        ray::Material(ray::Color(0.0, 1.0, 0.0))));
+    require(scene.shapeCount() == 2,
+            "shape mutation uses the Scene boundary");
+    require(!scene.accelerationReady(),
+            "shape addition invalidates acceleration");
+
+    const ray::Shape* expected = &scene.shapeAt(1);
+    const ray::Ray forward(
+        ray::Vec3(), ray::Vec3(0.0, 0.0, 1.0));
+    ray::HitRecord fallback_hit;
+    require(scene.intersect(forward,
+                            ray::kRayTMin,
+                            100.0,
+                            fallback_hit,
+                            ray::AccelMode::Bvh) &&
+                fallback_hit.shape == expected,
+            "invalidated BVH falls back to current geometry");
+
+    scene.buildAcceleration();
+    ray::HitRecord rebuilt_hit;
+    require(scene.intersect(forward,
+                            ray::kRayTMin,
+                            100.0,
+                            rebuilt_hit,
+                            ray::AccelMode::Bvh) &&
+                rebuilt_hit.shape == expected,
+            "rebuilt BVH indexes current geometry");
+}
+
 ray::Scene makeDenseScene() {
     ray::Scene scene;
     scene.width = 160;
@@ -213,6 +289,7 @@ int main() {
         testPlaneOnly();
         testCylinder();
         testEqualDistanceTie();
+        testShapeMutationBoundary();
         testDenseRender();
     } catch (const std::exception& error) {
         std::cerr << "acceleration regression failed: "
