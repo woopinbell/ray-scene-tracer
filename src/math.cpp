@@ -15,6 +15,8 @@ double Vec3::lengthSquared() const {
     return x * x + y * y + z * z;
 }
 
+// [INTV:EDGE] std::hypot(x,y,z)는 sqrt(x*x+y*y+z*z)와 수학적으로 같지만, 중간 제곱 항이 지나치게
+// 커지거나 작아져 오버플로/언더플로가 나는 것을 표준 라이브러리가 내부적으로 방지해준다.
 double Vec3::length() const {
     return std::hypot(x, y, z);
 }
@@ -112,6 +114,11 @@ double length(const Vec3& value) {
     return value.length();
 }
 
+// [INTV:EDGE] 길이가 kEpsilon 이하인(정규화 불가능한) 벡터를 0/len으로 나누면 NaN/무한대가 나온다 —
+// 그 직전에 영벡터로 대체해 이후 계산 전체가 NaN으로 오염되는 걸 막는다.
+// - [TRAP] 이 가드 없이 재구현하면, 길이 0에 가까운 법선/방향 벡터 하나가 렌더러 파이프라인 어딘가에서
+//   NaN을 만들고, 그 NaN이 이후 모든 산술 연산에 전파되어 "이미지가 전부 검게/이상하게 나오는데
+//   원인을 추적하기 어려운" 디버깅하기 까다로운 버그로 이어진다.
 Vec3 normalize(const Vec3& value) {
     const double len = value.length();
     if (len <= kEpsilon) {

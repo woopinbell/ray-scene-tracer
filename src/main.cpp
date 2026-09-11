@@ -25,6 +25,9 @@ void printUsage() {
         << " [--max-depth 0..32]\n";
 }
 
+// [INTV:EDGE] std::isdigit만으로 먼저 문자 집합을 검증한 뒤에야 stoull을 호출 — "-5" 같은 입력은
+// isdigit 검사에서 이미 걸러지므로, 부호 문자를 허용하는 stoull이 음수를 "큰 부호 없는 값"으로 잘못
+// 받아들이는(unsigned 언더플로처럼 보이는) 상황 자체가 애초에 생기지 않는다.
 bool parseUnsigned(const std::string& token,
                    unsigned long long maximum,
                    unsigned long long& value) {
@@ -58,6 +61,9 @@ bool parseCli(int argc, char** argv, CliOptions& options) {
     options.scenePath = argv[1];
     options.outputPath = argv[2];
 
+    // [INTV:EDGE] 각 옵션마다 seen_* 플래그로 중복 지정을 거부한다 — "--accel bvh --accel linear"
+    // 처럼 뒤에 온 값이 조용히 앞의 값을 덮어써서 사용자가 의도한 게 어느 쪽인지 불명확해지는 대신,
+    // 명시적으로 실패시켜 사용자에게 알리는 엄격한 CLI 파싱 정책.
     bool seen_checksum = false;
     bool seen_accel = false;
     bool seen_threads = false;

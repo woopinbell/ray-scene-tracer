@@ -13,11 +13,15 @@ struct RenderSettings {
     double tMin;
     double tMax;
     AccelMode accelMode;
+    // [INTV:ARCH] 0이면 "하드웨어 코어 수만큼 자동 결정"이라는 의미(renderer.cpp의
+    // hardware_concurrency 사용부 참고) — 0을 "미설정" 센티널 값으로 쓰는 관례.
     unsigned int threadCount;
 
     RenderSettings();
 };
 
+// [INTV:ARCH] width*height*3(RGB 각 1바이트)개의 unsigned char를 한 줄로 늘어놓은 원시 픽셀 버퍼 —
+// 대부분의 이미지 파일 포맷/GPU 텍스처 업로드가 기대하는 표준적인 배치.
 struct Image {
     int width;
     int height;
