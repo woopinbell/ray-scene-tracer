@@ -1,3 +1,12 @@
+// [INTV:ARCH] CMakeLists.txt가 이 파일을 별도 실행 파일(ray-core-tests)로 빌드해 CTest의
+// core_regression 항목으로 등록한다(CI의 ctest 스텝이 실행하는 여러 테스트 바이너리 중 하나) —
+// 벡터/기하 연산, 씬 경계 계산, 카메라/이미지 저장 등 "렌더링 파이프라인의 기반이 되는 순수
+// 계산·자료구조" 계층을 다룬다(실제 광선 추적/셰이딩 자체는 accel_tests/material_tests가 담당).
+// [INTV:TRAP] 외부 테스트 프레임워크(Catch2, doctest 등) 없이 require()가 조건 실패 시
+// runtime_error를 던지는 방식의 초소형 자체 하네스를 쓴다 — main()이 모든 testX()를 하나의
+// try/catch로 감싸 실행하므로, 앞쪽 테스트(testMath 등)가 실패하면 그 뒤 테스트는 아예 실행되지
+// 않고 그 자리에서 종료된다(전부 통과/첫 실패에서 중단, 부분 실패 목록을 한 번에 볼 수는 없다는
+// 트레이드오프) — 재구현 시 "테스트끼리 서로 독립적으로 다 실행되겠지"라고 가정하면 안 된다.
 #include "ray.hpp"
 
 #include <cmath>

@@ -1,3 +1,15 @@
+// [INTV:ARCH] CTest에는 render_determinism이라는 이름으로 등록되지만(CMakeLists.txt), 이 파일이
+// 실제로 검증하는 건 "여러 번 렌더링해도 결과가 같은가"가 아니라 renderScene의 멀티스레드
+// 경로에서 워커 스레드 하나가 던진 예외가 호출자(메인 스레드)까지 정상적으로 전파되는가 —
+// 진짜 픽셀 단위 결정론(재현성) 검증은 tests/render_determinism.sh(같은 씬을 두 번 렌더링해서
+// 바이트 단위로 비교)가 별도로 맡는다.
+// [INTV:TRAP] 스레드 풀에서 워커가 예외를 던지면 그 예외는 스레드 경계를 자동으로 못 넘는다 —
+// std::thread에서 그냥 예외가 발생하면 프로그램이 std::terminate로 죽어버릴 뿐, 메인 스레드의
+// try/catch로는 절대 안 잡힌다. renderScene은 각 워커를 std::exception_ptr로 감싸 예외를
+// 캡처해뒀다가(renderer.cpp), 모든 워커가 끝난 뒤 메인 스레드에서 std::rethrow_exception으로
+// 다시 던지는 방식으로 이 문제를 해결한다 — 재구현 시 이 캡처+재던지기 장치를 빠뜨리면 워커
+// 예외가 조용히 삼켜지거나 프로그램이 통째로 죽는다. 이 테스트가 바로 그 장치가 실제로 동작하는지
+// (예외 메시지가 손실 없이 그대로 전파되는지)를 검증한다.
 #include "ray.hpp"
 
 #include <iostream>

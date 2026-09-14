@@ -1,3 +1,10 @@
+// [INTV:ARCH] CTest의 accel_regression 항목(ray-accel-tests 실행 파일) — 광선-도형 교차 판정과
+// 가장 가까운 교차점 선택(가속 구조/장면 순회) 로직에 집중한다. testEqualDistanceTie(동일 거리
+// 교차가 여러 개일 때 어떤 걸 골라야 하는지)와 testShapeMutationBoundary(도형 컨테이너를 순회
+// 중 변경하는 경계 상황) 같은 이름에서 보이듯, "정상 케이스"보다 "애매한 동점/경계 케이스"에
+// 더 무게가 실린 테스트 파일 — 가속 구조 재구현 시 가장 실수하기 쉬운 지점이 바로 이런
+// 동점/경계 처리이기 때문이다. 하네스 구조(require + main의 순차 실행/중단)는 core_tests.cpp와
+// 동일.
 #include "ray.hpp"
 
 #include <cmath>

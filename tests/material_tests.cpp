@@ -1,3 +1,8 @@
+// [INTV:ARCH] CTest의 material_regression 항목 — 씬 파일에 적힌 재질 정의가 올바르게 파싱되는지,
+// 그리고 금속 재질의 반사 깊이 제한(testMetalDepthAndReflection)과 디이퓨즈 셰이딩 결과값 자체를
+// 고정된 "golden" 값과 비교(testDiffuseGolden)하는 회귀 테스트로 구성된다 — golden 비교는 셰이딩
+// 계산식을 리팩터링했을 때 "코드는 안 죽었지만 색이 미묘하게 달라졌다" 같은, 컴파일 에러로는
+// 못 잡는 회귀를 잡기 위한 전형적인 기법이다. 하네스 구조는 core_tests.cpp와 동일.
 #include "ray.hpp"
 
 #include <cmath>

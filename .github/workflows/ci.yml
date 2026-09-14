@@ -1,14 +1,44 @@
+# [INTV:ARCH] 이 저장소의 GitHub Actions 워크플로 — 이 파일 + YAML 문법 자체에 처음 접하는 사람을
+# 위해, 이 리포지토리 전체 CI 4개 프로젝트 중 이 파일에만 "GitHub Actions 개념 자체"를 설명하는
+# 주석을 넣어뒀다(다른 CI 파일들은 이 파일을 먼저 읽었다는 전제로 "왜 이렇게 짰는지"만 다룬다).
+# 이 워크플로가 하는 일: push/PR마다 (1) 두 OS에서 Release 빌드 + 테스트, (2) 리눅스에서 한 번 더
+# ASan/UBSan(메모리·정의되지 않은 동작 검사) 빌드 + 테스트를 각각 별도 job으로 돌린다.
+#
+# [INTV:ARCH] YAML 워크플로 파일의 기본 골격 — "on(언제) -> jobs(무엇을) -> steps(어떤 순서로)"
+# - `on:` 이 워크플로를 실행시키는 트리거(이벤트) 목록.
+# - `jobs:` 트리거될 때 실행할 작업 단위들. 각 job은 기본적으로 서로 독립된 새 가상머신(runner)에서,
+#   서로 다른 job끼리는 병렬로 실행된다(이 파일의 release와 sanitizers도 동시에 시작한다 —
+#   sanitizers가 release의 결과를 기다릴 이유가 없기 때문에 굳이 순서를 강제하지 않은 것).
+# - `steps:` 한 job 안에서 순서대로(직렬로) 실행되는 명령/액션 목록.
 name: C++ 검증
 
+# [INTV:TRAP] 브랜치 필터 없이 push/pull_request만 적어두면 "모든 브랜치로의 모든 push, 모든
+# PR"에서 이 워크플로가 돈다 — 다른 프로젝트들(inception, pong-pong)처럼 `branches: [main]`을
+# 넣지 않은 이유는, 이 저장소가 기능 브랜치 단계에서부터 빌드/테스트 회귀를 바로 잡고 싶어서로
+# 보인다(대신 브랜치가 많아지면 그만큼 CI 실행 횟수와 비용이 늘어나는 트레이드오프를 감수한다).
 on:
   push:
   pull_request:
 
 jobs:
+  # [INTV:ARCH] 같은 소스를 "OS 2개 × 빌드 구성 1개(Release)"로 반복 검증하는 job을 job 2개로
+  # 손수 나누어 쓰는 대신, `strategy.matrix`로 하나의 job 정의를 여러 조합에 자동으로 곱해서
+  # 돌린다 — os 목록에 항목을 추가/삭제하는 것만으로 검증 범위를 조절할 수 있어, job을 통째로
+  # 복사-붙여넣기하는 것보다 유지보수가 쉽다.
   release:
+    # [INTV:ARCH] `${{ matrix.os }}`: matrix 컨텍스트 변수 참조 문법 — matrix.os에 지금 이 job
+    # 인스턴스가 어떤 조합으로 실행 중인지가 들어있다. name에 넣으면 Actions 화면에서
+    # "Release / ubuntu-latest", "Release / macos-latest"처럼 인스턴스별로 구분해서 보여준다.
     name: Release / ${{ matrix.os }}
+    # [INTV:ARCH] runs-on도 matrix.os를 그대로 참조 — 이 한 줄 때문에 matrix.os 목록에 있는 값마다
+    # "그 OS의 러너에서 이 job 전체를 한 번씩" 실행하는 병렬 job들이 생긴다.
     runs-on: ${{ matrix.os }}
     strategy:
+      # [INTV:TRADE_OFF] fail-fast(기본값 true)는 matrix 중 하나라도 실패하면 아직 실행 중인 나머지
+      # 조합을 즉시 취소한다 — CI 리소스를 아끼는 대신, "ubuntu에서만 실패하고 macOS는 어떻게
+      # 되는지"를 확인할 기회를 잃는다. 여기서는 false로 꺼서 두 OS 모두의 결과를 항상 다 받는 쪽을
+      # 택했다 — OS별 플랫폼 특이 버그(예: 헤더 경로 차이, 부동소수점 처리 차이)를 한 번의 CI
+      # 실행에서 동시에 파악하려는 의도로 보인다.
       fail-fast: false
       matrix:
         os:
@@ -16,8 +46,17 @@ jobs:
           - macos-latest
 
     steps:
+      # [INTV:ARCH] `uses:`는 GitHub Actions 마켓플레이스의 재사용 가능한 "액션"을 실행하는 문법
+      # (`run:`이 셸 명령을 직접 실행하는 것과 대비된다) — actions/checkout은 이 저장소의 코드를
+      # 러너 안으로 clone해 오는, 사실상 모든 워크플로의 첫 스텝. `@v4`로 메이저 버전을 고정해,
+      # 액션 제작자가 나중에 태그를 옮기거나 업스트림이 breaking change를 내도 이 워크플로가
+      # 갑자기 깨지지 않게 한다.
       - uses: actions/checkout@v4
       - name: 구성
+        # [INTV:ARCH] `run: >` 의 `>`는 YAML의 "접힌 블록 스칼라" 문법 — 여러 줄로 나눠 쓴 텍스트를
+        # 줄바꿈 대신 공백으로 이어붙여 한 줄짜리 셸 명령으로 만든다(사람이 읽기 편하게 옵션을
+        # 줄마다 나눠 적으면서도, 실제로는 `cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+        # -DBUILD_TESTING=ON` 한 줄이 실행된다).
         run: >
           cmake -S . -B build
           -DCMAKE_BUILD_TYPE=Release
@@ -27,6 +66,10 @@ jobs:
       - name: 회귀 검사
         run: ctest --test-dir build --output-on-failure
 
+  # [INTV:TRADE_OFF] ASan/UBSan(주소/정의되지 않은 동작 살균기)은 실행 시점 계측 오버헤드가 커서
+  # Release 빌드보다 훨씬 느리고, OS별로 다르게 실패하는 종류의 버그(플랫폼 API 차이 등)를 잡는
+  # 것도 아니다 — 그래서 matrix로 OS마다 반복하지 않고 ubuntu-latest 한 번만 돌려, "메모리
+  # 안전성 검증"과 "크로스 플랫폼 빌드 검증"이라는 서로 다른 목적을 별도 job으로 분리했다.
   sanitizers:
     name: ASan / UBSan
     runs-on: ubuntu-latest
@@ -42,7 +85,55 @@ jobs:
       - name: 빌드
         run: cmake --build build --parallel
       - name: 메모리/정의되지 않은 동작 검사
+        # [INTV:ARCH] `env:`를 step 레벨에 두면 이 스텝(ctest 실행) 동안만 유효한 환경변수가 된다
+        # (job 전체나 워크플로 전체에 걸지 않는 이유는 이 값들이 sanitizer 빌드에서만 의미가 있기
+        # 때문). detect_leaks=1로 메모리 누수까지 감지 범위에 포함시키고, 두 옵션 모두
+        # halt_on_error=1로 첫 위반에서 즉시 중단시켜 — 하나의 실행에서 여러 위반이 뒤섞여
+        # 원인을 알아보기 힘든 로그가 되는 것을 막는다.
         env:
           ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
           UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
         run: ctest --test-dir build --output-on-failure
+
+# ======================================================================
+# [INTV:ARCH] 용어 사전 — 이 워크플로에는 안 쓰였지만 inception/pong-pong/portfolio-site의 CI에서
+# 보게 될 GitHub Actions 개념들. 여기 없다고 그 프로젝트가 이유 없이 복잡하게 짠 게 아니라, 이
+# 프로젝트가 그 문제 자체를 안 갖고 있어서 안 쓰인 경우가 많다(아래 각 항목에 왜 여기선 필요 없는지도
+# 함께 적었다).
+# ======================================================================
+#
+# - permissions: 이 워크플로에 발급되는 GITHUB_TOKEN이 리포지토리에 대해 가질 수 있는 권한
+#   (읽기/쓰기 등)을 명시적으로 제한하는 최상위 키. 여기서는 체크아웃 + 로컬 빌드/테스트만 하고
+#   그 토큰으로 뭔가를 쓰거나(아티팩트 업로드, PR 코멘트 등) 외부에 쓰지 않기 때문에 생략해도
+#   기본 권한으로 충분하다 — 다른 프로젝트는 아티팩트를 업로드하거나 리포지토리 메타데이터를
+#   읽어야 해서 명시적으로 최소 권한(예: contents: read)을 선언해둔다.
+# - concurrency: 같은 브랜치/PR로 커밋을 연달아 push했을 때, "먼저 시작한 실행을 취소하고 최신
+#   커밋만 돌린다"는 규칙을 그룹 키로 정의하는 키. 이 프로젝트는 빌드가 상대적으로 짧고 job 간
+#   충돌할 공유 자원(포트, 컨테이너 등)도 없어 굳이 취소 로직이 필요 없다 — 반면 pong-pong처럼
+#   DB나 포트를 점유하는 job이 있으면, 오래된 실행이 안 끝난 채 새 실행이 겹쳐 도는 걸 막을
+#   필요가 커진다.
+# - ${{ github.* }} 컨텍스트: github.run_id, github.run_attempt, github.ref, github.workflow
+#   처럼 "이 실행 자체"에 대한 메타데이터를 담은 내장 변수. 주로 아티팩트 이름을 실행마다
+#   고유하게 만들거나(같은 워크플로가 재시도될 때 이전 아티팩트를 덮어쓰지 않도록), concurrency
+#   그룹 키를 만드는 데 쓰인다 — 이 워크플로는 아티팩트를 남기지 않아 쓸 일이 없다.
+# - timeout-minutes: job이나 step이 이 시간을 넘기면 강제로 실패 처리하는 안전장치. 네트워크
+#   호출이나 컨테이너 기동처럼 "정상이어도 오래 걸리거나, 비정상이면 무한정 멈출 수 있는" 단계가
+#   있는 워크플로(inception의 컨테이너 통합 테스트, pong-pong의 브라우저 테스트)에서 특히
+#   중요하다 — 여기는 로컬 컴파일/테스트뿐이라 GitHub Actions의 기본 job 타임아웃(6시간)에
+#   맡겨도 실질적으로 문제가 안 된다.
+# - if: always() / if: failure(): 스텝 실행 조건. 기본적으로 앞 스텝이 실패하면 뒤 스텝은
+#   자동으로 건너뛰는데, always()는 "앞이 성공하든 실패하든 무조건" 실행하게 하고(정리/정상
+#   종료 스텝에 흔히 씀), failure()는 "앞에서 뭔가 실패했을 때만" 실행하게 한다(실패 시 진단
+#   정보를 남기는 스텝에 흔히 씀). 이 워크플로는 실패해도 별도로 남길 진단 자료나 정리할 자원이
+#   없어 조건부 스텝 자체가 없다.
+# - actions/upload-artifact: job 실행 중 생성된 파일(로그, 스크린샷, 진단 리포트 등)을 워크플로
+#   실행 결과 페이지에서 나중에 내려받을 수 있게 업로드하는 마켓플레이스 액션. ctest 실패
+#   메시지는 이미 콘솔 로그에 --output-on-failure로 다 찍히므로 별도 파일을 남길 필요가 없다.
+# - services: job 시작 시 함께 띄워주는 부가 컨테이너(DB 등)를 선언하는 키, 보통 healthcheck
+#   옵션과 함께 "그 컨테이너가 준비될 때까지" 자동으로 기다려준다. 이 프로젝트는 외부 서비스
+#   의존성이 없는 순수 컴파일/유닛테스트라 필요 없다.
+# - actions/setup-node + cache: Node.js 런타임 설치 + 패키지 매니저 캐시(참고: pnpm은
+#   pnpm/action-setup으로 먼저 pnpm 자체를 설치한 뒤에야 이 캐시 키를 쓸 수 있다) 조합. C++/CMake
+#   프로젝트에는 해당하지 않는다.
+# - branches: [main] (트리거 필터): on.push/on.pull_request 아래에서 "이 브랜치로 향할 때만"
+#   실행되도록 좁히는 필터. 위 [INTV:TRAP]에서 설명했듯 이 프로젝트는 의도적으로 필터링하지 않는다.
