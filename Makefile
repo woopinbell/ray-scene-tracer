@@ -9,11 +9,9 @@ CMAKE_CONFIGURE_ARGS ?=
 CMAKE_BUILD_ARGS ?= --parallel
 CTEST_ARGS ?= --output-on-failure --no-tests=error --timeout 120
 
-.PHONY: all build check ci clean configure guard-build-dir help sanitize test
+.PHONY: all build check ci clean configure fclean guard-build-dir help re sanitize test
 
 all: build
-	$(CMAKE) -E rm -f ray-scene-tracer
-	$(CMAKE) -E create_symlink "$(BUILD_DIR)/ray-scene-tracer" ray-scene-tracer
 
 configure:
 	$(CMAKE) -S . -B "$(BUILD_DIR)" \
@@ -62,4 +60,7 @@ guard-build-dir:
 
 clean: guard-build-dir
 	$(CMAKE) -E rm -rf "$(BUILD_DIR)"
-	$(CMAKE) -E rm -f ray-scene-tracer
+
+fclean: clean
+
+re: fclean all
